@@ -25,10 +25,6 @@
             in_array('Admin Inventaris', $roles) ||
             in_array('Petugas Inventaris', $roles);
 
-        $canMaintenance =
-            $isSuperAdmin ||
-            in_array('Teknisi', $roles);
-
         $canManageLocation =
             $isSuperAdmin ||
             in_array('Admin Inventaris', $roles) ||
@@ -49,25 +45,24 @@
                 Barang / Aset
             </a>
 
+            <a href="<?= base_url('stock-items') ?>"
+                class="nav-link text-white">
+                Barang Stok
+            </a>
+
             <a href="<?= base_url('asset-mutations') ?>"
                 class="nav-link text-white">
                 Mutasi Aset
             </a>
 
+            <a href="<?= base_url('stock-movements') ?>"
+                class="nav-link text-white">
+                Stock Movement
+            </a>
+
             <a href="<?= base_url('stock-opnames') ?>"
                 class="nav-link text-white">
                 Stock Opname
-            </a>
-
-        <?php endif; ?>
-
-
-        <!-- Maintenance -->
-        <?php if ($canMaintenance): ?>
-
-            <a href="<?= base_url('maintenances') ?>"
-                class="nav-link text-white">
-                Maintenance & Perbaikan
             </a>
 
         <?php endif; ?>

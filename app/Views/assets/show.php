@@ -1,4 +1,4 @@
-<?= view('layout/header', ['title' => 'Detail Barang']) ?>
+﻿<?= view('layout/header', ['title' => 'Detail Barang']) ?>
 <?= view('layout/sidebar') ?>
 
 <div class="p-4">
@@ -13,16 +13,38 @@
             </p>
         </div>
 
-        <div>
+        <div class="text-nowrap">
             <a href="<?= base_url('assets') ?>"
                 class="btn btn-secondary">
                 Kembali
             </a>
 
-            <a href="<?= base_url('assets/edit/' . $asset['id']) ?>"
-                class="btn btn-warning">
+            <button type="button"
+                    class="btn btn-danger btn-toggle-asset-out"
+                    id="btnAssetOut"
+                    <?= $asset['asset_status'] === 'Keluar Perusahaan' ? 'hidden' : '' ?>>
+                Keluar Perusahaan
+            </button>
+
+            <button type="button"
+                    class="btn btn-success btn-toggle-asset-out"
+                    id="btnAssetReturn"
+                    <?= $asset['asset_status'] !== 'Keluar Perusahaan' ? 'hidden' : '' ?>>
+                Pengembalian
+            </button>
+
+            <button type="button"
+                    class="btn btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editAssetModal">
                 Edit
-            </a>
+            </button>
+
+            <button type="button"
+                    class="btn btn-danger"
+                    id="btnDeleteAsset">
+                Hapus
+            </button>
         </div>
 
     </div>
@@ -101,14 +123,14 @@
 
                         <tr>
                             <th width="40%">Unit</th>
-                            <td>
+                            <td id="asset-unit">
                                 <?= esc($asset['unit_name']) ?>
                             </td>
                         </tr>
 
                         <tr>
                             <th>Lokasi</th>
-                            <td>
+                            <td id="asset-location">
                                 <?= esc($asset['location_name']) ?>
                             </td>
                         </tr>
@@ -135,28 +157,20 @@
                         <tr>
                             <th>Kondisi</th>
                             <td>
-
-                                <?php
-                                $conditionBadge = match ($asset['condition_status']) {
+                                <span class="badge bg-<?= match ($asset['condition_status']) {
                                     'Baik' => 'success',
                                     'Rusak Ringan' => 'warning',
                                     'Rusak Berat' => 'danger',
                                     default => 'secondary',
-                                };
-                                ?>
-
-                                <span class="badge bg-<?= $conditionBadge ?>">
+                                } ?>">
                                     <?= esc($asset['condition_status']) ?>
                                 </span>
-
                             </td>
                         </tr>
 
                         <tr>
                             <th>Status</th>
-                            <td>
-                                <?= esc($asset['asset_status']) ?>
-                            </td>
+                            <td id="asset-status-cell"></td>
                         </tr>
 
                     </table>
@@ -184,107 +198,45 @@
 
 
     <!-- ===================================================== -->
-    <!-- RIWAYAT MUTASI -->
+    <!-- RIWAYAT PERGERAKAN -->
     <!-- ===================================================== -->
 
     <div class="card shadow-sm mb-4">
 
         <div class="card-header d-flex justify-content-between align-items-center">
 
-            <strong>Riwayat Mutasi Aset</strong>
+            <strong>Riwayat Pergerakan</strong>
 
-            <a href="<?= base_url('asset-mutations/create?asset_id=' . $asset['id']) ?>"
-                class="btn btn-sm btn-primary">
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#mutasiModal">
                 + Mutasi
-            </a>
+            </button>
 
         </div>
 
         <div class="card-body">
 
-            <?php if (empty($mutations)): ?>
+            <div class="table-responsive">
 
-                <div class="text-center text-muted py-4">
-                    Belum ada riwayat mutasi untuk barang ini.
-                </div>
+                <table id="tabel-pergerakan"
+                       class="table table-hover align-middle w-100">
 
-            <?php else: ?>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Jenis</th>
+                            <th>Dari Lokasi</th>
+                            <th>Ke Lokasi</th>
+                            <th>Keterangan</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
 
-                <div class="table-responsive">
+                </table>
 
-                    <table class="table table-hover align-middle">
-
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Dari Lokasi</th>
-                                <th>Ke Lokasi</th>
-                                <th>Keterangan</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <?php foreach ($mutations as $mutation): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= esc(
-                                            $mutation['mutation_date'] ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $mutation['from_location_name']
-                                                ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $mutation['to_location_name']
-                                                ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $mutation['description']
-                                                ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?php
-                                        $mutationBadge = match ($mutation['status'] ?? '') {
-                                            'Diajukan' => 'warning',
-                                            'Disetujui' => 'success',
-                                            'Ditolak' => 'danger',
-                                            default => 'secondary',
-                                        };
-                                        ?>
-
-                                        <span class="badge bg-<?= $mutationBadge ?>">
-                                            <?= esc(
-                                                $mutation['status'] ?? '-'
-                                            ) ?>
-                                        </span>
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            <?php endif; ?>
+            </div>
 
         </div>
 
@@ -297,253 +249,450 @@
 
     <div class="card shadow-sm mb-4">
 
-        <div class="card-header d-flex justify-content-between align-items-center">
-
+        <div class="card-header">
             <strong>Riwayat Stok Opname</strong>
-
-            <a href="<?= base_url('stock-opnames/create?asset_id=' . $asset['id']) ?>"
-                class="btn btn-sm btn-primary">
-                + Stok Opname
-            </a>
-
         </div>
 
         <div class="card-body">
 
-            <?php if (empty($stockOpnames)): ?>
+            <div class="table-responsive">
 
-                <div class="text-center text-muted py-4">
-                    Belum ada riwayat stok opname untuk barang ini.
-                </div>
+                <table id="tabel-opname"
+                       class="table table-hover align-middle w-100">
 
-            <?php else: ?>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Hasil</th>
+                            <th>Kondisi</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
 
-                <div class="table-responsive">
+                </table>
 
-                    <table class="table table-hover align-middle">
-
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Hasil</th>
-                                <th>Kondisi</th>
-                                <th>Keterangan</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <?php foreach ($stockOpnames as $opname): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= esc(
-                                            $opname['opname_date'] ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $opname['result'] ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $opname['condition_status']
-                                                ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $opname['description'] ?? '-'
-                                        ) ?>
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            <?php endif; ?>
+            </div>
 
         </div>
 
     </div>
 
-
-    <!-- ===================================================== -->
-    <!-- RIWAYAT MAINTENANCE -->
-    <!-- ===================================================== -->
-
-    <div class="card shadow-sm mb-4">
-
-        <div class="card-header d-flex justify-content-between align-items-center">
-
-            <strong>Riwayat Maintenance & Perbaikan</strong>
-
-            <a href="<?= base_url('maintenances/create?asset_id=' . $asset['id']) ?>"
-                class="btn btn-sm btn-primary">
-                + Maintenance
-            </a>
-
-        </div>
-
-        <div class="card-body">
-
-            <?php if (empty($maintenances)): ?>
-
-                <div class="text-center text-muted py-4">
-                    Belum ada riwayat maintenance untuk barang ini.
-                </div>
-
-            <?php else: ?>
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle">
-
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Jenis</th>
-                                <th>Masalah</th>
-                                <th>Tindakan</th>
-                                <th>Teknisi</th>
-                                <th>Status</th>
-                                <th>Biaya</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <?php foreach ($maintenances as $maintenance): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= esc(
-                                            $maintenance['maintenance_date']
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $maintenance['maintenance_type']
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $maintenance['problem'] ?: '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc(
-                                            $maintenance['action_taken'] ?: '-'
-                                        ) ?>
-                                    </td>
-
-                                    <td>
-
-                                        <?php if (
-                                            ($maintenance['technician_type'] ?? '')
-                                            === 'Internal'
-                                        ): ?>
-
-                                            <?= esc(
-                                                $maintenance['technician_name']
-                                                    ?: '-'
-                                            ) ?>
-
-                                            <br>
-
-                                            <span class="badge bg-info">
-                                                Internal
-                                            </span>
-
-                                        <?php else: ?>
-
-                                            <?= esc(
-                                                $maintenance['technician_name']
-                                                    ?: '-'
-                                            ) ?>
-
-                                            <?php if (
-                                                !empty($maintenance['vendor_name'])
-                                            ): ?>
-
-                                                <br>
-
-                                                <small class="text-muted">
-                                                    <?= esc(
-                                                        $maintenance['vendor_name']
-                                                    ) ?>
-                                                </small>
-
-                                            <?php endif; ?>
-
-                                            <br>
-
-                                            <span class="badge bg-secondary">
-                                                External
-                                            </span>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <?php
-                                        $statusBadge = match ($maintenance['status']) {
-                                            'Diajukan'   => 'warning',
-                                            'Diproses'   => 'primary',
-                                            'Selesai'    => 'success',
-                                            'Dibatalkan' => 'danger',
-                                            default      => 'secondary',
-                                        };
-                                        ?>
-
-                                        <span class="badge bg-<?= $statusBadge ?>">
-                                            <?= esc($maintenance['status']) ?>
-                                        </span>
-
-                                    </td>
-
-                                    <td>
-                                        Rp <?= number_format(
-                                                $maintenance['cost'],
-                                                0,
-                                                ',',
-                                                '.'
-                                            ) ?>
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            <?php endif; ?>
-
-        </div>
-
-    </div>
 
 </div>
 
+<!-- ===================================================== -->
+<!-- MODAL EDIT -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="editAssetModal"
+     tabindex="-1"
+     data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="editAssetForm"
+                  method="post"
+                  action="<?= base_url('assets/update/' . $asset['id']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Barang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Kode Barang</label>
+                            <input type="text" name="asset_code" class="form-control" value="<?= esc($asset['asset_code']) ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Barang</label>
+                            <input type="text" name="name" class="form-control" value="<?= esc($asset['name']) ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori</label>
+                            <select name="category_id" class="form-select" required>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?= $category['id'] ?>" <?= $category['id'] == $asset['category_id'] ? 'selected' : '' ?>><?= esc($category['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Unit</label>
+                            <select name="unit_id" class="form-select" required>
+                                <?php foreach ($units as $unit): ?>
+                                    <option value="<?= $unit['id'] ?>" <?= $unit['id'] == $asset['unit_id'] ? 'selected' : '' ?>><?= esc($unit['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Lokasi</label>
+                            <select name="location_id" class="form-select" required>
+                                <?php foreach ($locations as $location): ?>
+                                    <option value="<?= $location['id'] ?>" <?= $location['id'] == $asset['location_id'] ? 'selected' : '' ?>><?= esc($location['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Brand</label>
+                            <input type="text" name="brand" class="form-control" value="<?= esc($asset['brand']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model</label>
+                            <input type="text" name="model" class="form-control" value="<?= esc($asset['model']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Serial Number</label>
+                            <input type="text" name="serial_number" class="form-control" value="<?= esc($asset['serial_number']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tahun Perolehan</label>
+                            <input type="number" name="acquisition_year" class="form-control" value="<?= esc($asset['acquisition_year']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Harga Perolehan</label>
+                            <input type="number" step="0.01" name="acquisition_price" class="form-control" value="<?= esc($asset['acquisition_price']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kondisi</label>
+                            <select name="condition_status" class="form-select" required>
+                                <option value="Baik" <?= $asset['condition_status'] === 'Baik' ? 'selected' : '' ?>>Baik</option>
+                                <option value="Rusak Ringan" <?= $asset['condition_status'] === 'Rusak Ringan' ? 'selected' : '' ?>>Rusak Ringan</option>
+                                <option value="Rusak Berat" <?= $asset['condition_status'] === 'Rusak Berat' ? 'selected' : '' ?>>Rusak Berat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select name="asset_status" class="form-select" required>
+                                <option value="Aktif" <?= $asset['asset_status'] === 'Aktif' ? 'selected' : '' ?>>Aktif</option>
+                                <option value="Dipinjam" <?= $asset['asset_status'] === 'Dipinjam' ? 'selected' : '' ?>>Dipinjam</option>
+                                <option value="Tidak Digunakan" <?= $asset['asset_status'] === 'Tidak Digunakan' ? 'selected' : '' ?>>Tidak Digunakan</option>
+                                <option value="Keluar Perusahaan" <?= $asset['asset_status'] === 'Keluar Perusahaan' ? 'selected' : '' ?>>Keluar Perusahaan</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Deskripsi</label>
+                            <textarea name="description" class="form-control" rows="2"><?= esc($asset['description']) ?></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL MUTASI -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="mutasiModal"
+     tabindex="-1"
+     data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="mutasiForm"
+                  method="post"
+                  action="<?= base_url('asset-mutations/store') ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mutasi Barang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 mb-3">
+                        <strong><?= esc($asset['name']) ?></strong><br>
+                        <small class="text-muted">
+                            <?= esc($asset['asset_code']) ?>
+                            â€” <?= esc($asset['location_name']) ?>
+                        </small>
+                    </div>
+                    <input type="hidden" name="asset_id" value="<?= $asset['id'] ?>">
+                    <div class="mb-3">
+                        <label class="form-label">Lokasi Tujuan</label>
+                        <select name="to_location_id" id="mutasiToLocation" class="form-select" required>
+                            <option value="">-- Pilih Lokasi --</option>
+                            <?php foreach ($locations as $location): ?>
+                                <option value="<?= $location['id'] ?>"><?= esc($location['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Tujuan</label>
+                        <select name="to_unit_id" id="mutasiToUnit" class="form-select" required disabled>
+                            <option value="">-- Pilih Lokasi Terlebih Dahulu --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal Mutasi</label>
+                        <input type="date" name="mutation_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alasan</label>
+                        <input type="text" name="reason" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Mutasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL KELUAR PERUSAHAAN -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="assetOutModal"
+     tabindex="-1"
+     data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assetOutForm"
+                  method="post"
+                  action="<?= base_url('assets/asset-out/' . $asset['id']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Barang Keluar Perusahaan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger py-2 mb-3">
+                        Barang akan dicatat keluar dari tanggung jawab perusahaan.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal</label>
+                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alasan</label>
+                        <input type="text" name="reason" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger">Ya, Keluar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MODAL PENGEMBALIAN -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="assetReturnModal"
+     tabindex="-1"
+     data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assetReturnForm"
+                  method="post"
+                  action="<?= base_url('assets/asset-return/' . $asset['id']) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pengembalian Barang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success py-2 mb-3">
+                        Barang kembali ke dalam tanggung jawab perusahaan.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal</label>
+                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Ya, Kembalikan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+(function () {
+    'use strict';
+
+    var movements = <?= json_encode($movements, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var stockOpnames = <?= json_encode($stockOpnames, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var unitsMap = <?= json_encode(array_column($units, 'name', 'id'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var locationsMap = <?= json_encode(array_column($locations, 'name', 'id'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+    function statusBadge(value) {
+        var map = {
+            'Aktif': 'success',
+            'Dipinjam': 'primary',
+            'Tidak Digunakan': 'secondary',
+            'Keluar Perusahaan': 'danger'
+        };
+        return '<span class="badge bg-' + (map[value] || 'secondary') + '">' + Inventaris.esc(value) + '</span>';
+    }
+
+    function movementBadge(value) {
+        var map = {
+            'Perolehan': 'info',
+            'Mutasi': 'primary',
+            'Pindah': 'primary',
+            'Keluar Perusahaan': 'danger',
+            'Pengembalian': 'success'
+        };
+        return '<span class="badge bg-' + (map[value] || 'secondary') + '">' + Inventaris.esc(value) + '</span>';
+    }
+
+    function setStatus(value) {
+        document.getElementById('asset-status-cell').innerHTML = statusBadge(value);
+        var keluar = document.getElementById('btnAssetOut');
+        var kembali = document.getElementById('btnAssetReturn');
+        keluar.hidden = value === 'Keluar Perusahaan';
+        kembali.hidden = value !== 'Keluar Perusahaan';
+    }
+
+    function prependMovement(row) {
+        dtPergerakan.row.add(row).draw(false);
+    }
+
+    var dtPergerakan = Inventaris.datatable('#tabel-pergerakan', {
+        serverSide: false,
+        data: movements,
+        columns: [
+            { data: 'transaction_date' },
+            { data: 'transaction_type', render: function (data) { return movementBadge(data); } },
+            { data: 'from_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'to_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } },
+            { data: 'created_by_name', render: function (data) { return Inventaris.esc(data || '-'); } }
+        ]
+    });
+
+    var dtOpname = Inventaris.datatable('#tabel-opname', {
+        serverSide: false,
+        data: stockOpnames,
+        columns: [
+            { data: 'opname_date', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'result', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'condition_status', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'notes', render: function (data) { return Inventaris.esc(data || '-'); } }
+        ]
+    });
+
+    setStatus(<?= json_encode($asset['asset_status']) ?>);
+
+    document.getElementById('btnAssetOut').addEventListener('click', function () {
+        Inventaris.openModal('assetOutModal');
+    });
+
+    document.getElementById('btnAssetReturn').addEventListener('click', function () {
+        Inventaris.openModal('assetReturnModal');
+    });
+
+    var mutasiForm = document.getElementById('mutasiForm');
+    var mutasiToUnit = document.getElementById('mutasiToUnit');
+
+    document.getElementById('mutasiToLocation').addEventListener('change', function () {
+        var id = this.value;
+        mutasiToUnit.disabled = !id;
+        mutasiToUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
+        if (!id) return;
+        Inventaris.fetchJson(Inventaris.baseUrl + 'asset-mutations/units-by-location/' + id)
+            .then(function (units) {
+                units.forEach(function (u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name;
+                    mutasiToUnit.appendChild(opt);
+                });
+            })
+            .catch(function () {
+                Inventaris.toast('Gagal memuat daftar unit.', 'danger');
+            });
+    });
+
+    mutasiForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        Inventaris.submitAjax(mutasiForm, {
+            onSuccess: function (json) {
+                Inventaris.hideModal('mutasiModal');
+                document.getElementById('asset-unit').textContent = unitsMap[json.data.unit_id] || '-';
+                document.getElementById('asset-location').textContent = locationsMap[json.data.location_id] || '-';
+                prependMovement(json.data.transaction);
+            }
+        });
+    });
+
+    document.getElementById('assetOutForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        Inventaris.submitAjax(this, {
+            onSuccess: function (json) {
+                Inventaris.hideModal('assetOutModal');
+                setStatus(json.data.asset_status);
+                prependMovement(json.data.transaction);
+            }
+        });
+    });
+
+    document.getElementById('assetReturnForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        Inventaris.submitAjax(this, {
+            onSuccess: function (json) {
+                Inventaris.hideModal('assetReturnModal');
+                setStatus(json.data.asset_status);
+                prependMovement(json.data.transaction);
+            }
+        });
+    });
+
+    document.getElementById('editAssetForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        Inventaris.submitAjax(this, {
+            onSuccess: function () {
+                Inventaris.hideModal('editAssetModal');
+                location.reload();
+            }
+        });
+    });
+
+    document.getElementById('btnDeleteAsset').addEventListener('click', function () {
+        Inventaris.confirm({
+            title: 'Hapus Barang',
+            message: 'Hapus barang "<?= esc($asset['name']) ?>"? Tindakan ini tidak dapat dibatalkan.',
+            onConfirm: function () {
+                Inventaris.fetchJson('<?= base_url('assets/delete/' . $asset['id']) ?>', {}, 'POST')
+                    .then(function (json) {
+                        if (json.success) {
+                            Inventaris.toast(json.message);
+                            window.location.href = '<?= base_url('assets') ?>';
+                        } else {
+                            Inventaris.toast(json.message, 'danger');
+                        }
+                    })
+                    .catch(function () {
+                        Inventaris.toast('Koneksi gagal. Silakan coba lagi.', 'danger');
+                    });
+            }
+        });
+    });
+})();
+</script>
 <?= view('layout/footer') ?>
+

@@ -52,6 +52,13 @@
         <!-- Directory containing the front controller (index.php) -->
         <const name="PUBLICPATH" value="./public/"/>
         <!-- Database configuration -->
+        <env name="database.tests.hostname" value="10.10.10.12"/>
+        <env name="database.tests.database" value="db_inventory_test"/>
+        <env name="database.tests.username" value="inv"/>
+        <env name="database.tests.password" value="inv123"/>
+        <env name="database.tests.DBDriver" value="MySQLi"/>
+        <env name="database.tests.DBPrefix" value=""/>
+        <env name="database.tests.port" value="3306"/>
         <!-- Uncomment to provide your own database for testing
             <env name="database.tests.hostname" value="localhost"/>
             <env name="database.tests.database" value="tests"/>

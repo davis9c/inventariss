@@ -1,4 +1,4 @@
-<?= view('layout/header', ['title' => 'Stock Opname']) ?>
+﻿<?= view('layout/header', ['title' => 'Stock Opname']) ?>
 <?= view('layout/sidebar') ?>
 
 <div class="p-4">
@@ -34,106 +34,18 @@
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                <table id="tabel-opname"
+                       class="table table-hover align-middle w-100">
 
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Kode</th>
                             <th>Tanggal</th>
                             <th>Lokasi</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="text-nowrap">Aksi</th>
                         </tr>
                     </thead>
-
-                    <tbody>
-
-                    <?php if (empty($opnames)): ?>
-
-                        <tr>
-                            <td colspan="6"
-                                class="text-center text-muted">
-
-                                Belum ada stock opname.
-
-                            </td>
-                        </tr>
-
-                    <?php else: ?>
-
-                        <?php foreach ($opnames as $i => $opname): ?>
-
-                            <tr>
-
-                                <td>
-                                    <?= $i + 1 ?>
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        <?= esc($opname['opname_code']) ?>
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    <?= esc($opname['opname_date']) ?>
-                                </td>
-
-                                <td>
-
-                                    <?php if ($opname['location_id']): ?>
-
-                                        <?= esc($opname['building']) ?>
-                                        -
-                                        <?= esc($opname['room']) ?>
-
-                                    <?php else: ?>
-
-                                        <span class="text-muted">
-                                            Semua lokasi
-                                        </span>
-
-                                    <?php endif; ?>
-
-                                </td>
-
-                                <td>
-
-                                    <?php if ($opname['status'] === 'Selesai'): ?>
-
-                                        <span class="badge bg-success">
-                                            Selesai
-                                        </span>
-
-                                    <?php else: ?>
-
-                                        <span class="badge bg-warning text-dark">
-                                            Draft
-                                        </span>
-
-                                    <?php endif; ?>
-
-                                </td>
-
-                                <td>
-
-                                    <a href="<?= base_url('stock-opnames/' . $opname['id']) ?>"
-                                       class="btn btn-sm btn-primary">
-
-                                        Detail
-
-                                    </a>
-
-                                </td>
-
-                            </tr>
-
-                        <?php endforeach; ?>
-
-                    <?php endif; ?>
-
-                    </tbody>
 
                 </table>
 
@@ -145,4 +57,43 @@
 
 </div>
 
+
+
+<script>
+(function () {
+    'use strict';
+
+    function statusBadge(value) {
+        return value === 'Selesai'
+            ? '<span class="badge bg-success">Selesai</span>'
+            : '<span class="badge bg-warning text-dark">Draft</span>';
+    }
+
+    function locationHtml(row) {
+        if (row.location_id) {
+            return Inventaris.esc(row.building) + ' - ' + Inventaris.esc(row.room);
+        }
+        return '<span class="text-muted">Semua lokasi</span>';
+    }
+
+    Inventaris.datatable('#tabel-opname', {
+        url: Inventaris.baseUrl + 'stock-opnames?format=json',
+        columns: [
+            { data: 'opname_code', render: function (data) { return '<strong>' + Inventaris.esc(data) + '</strong>'; } },
+            { data: 'opname_date' },
+            { data: null, render: function (data, type, row) { return locationHtml(row); } },
+            { data: 'status', render: function (data) { return statusBadge(data); } },
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function (data, type, row) {
+                    return '<a href="' + Inventaris.baseUrl + 'stock-opnames/' + row.id + '" class="btn btn-sm btn-primary">Detail</a>';
+                }
+            }
+        ]
+    });
+})();
+</script>
 <?= view('layout/footer') ?>
+

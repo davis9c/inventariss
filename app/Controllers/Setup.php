@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\RoleModel;
+use App\Models\UserRoleModel;
 
 class Setup extends BaseController
 {
@@ -37,12 +38,24 @@ class Setup extends BaseController
         ->where('name', 'Super Admin')
         ->first();
 
+    if (!$superAdmin) {
+        return redirect()->back()->with('error', 'Role Super Admin belum ada. Jalankan seeder terlebih dahulu.');
+    }
+
     $userModel->insert([
-        'role_id'   => $superAdmin['id'],
         'username'  => 'admin',
         'password'  => password_hash($password, PASSWORD_DEFAULT),
         'name'      => 'Super Admin',
         'is_active' => true,
+    ]);
+
+    $userId = $userModel->getInsertID();
+
+    $userRoleModel = new UserRoleModel();
+    $userRoleModel->insert([
+        'user_id'    => $userId,
+        'role_id'    => $superAdmin['id'],
+        'created_at' => date('Y-m-d H:i:s'),
     ]);
 
     return redirect()->to('/login');

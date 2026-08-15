@@ -126,6 +126,10 @@ $routes->group(
         $routes->get('(:num)', 'Asset::show/$1');
         $routes->post('update/(:num)', 'Asset::update/$1');
         $routes->post('delete/(:num)', 'Asset::delete/$1');
+        $routes->get('asset-out/(:num)', 'Asset::assetOut/$1');
+        $routes->post('asset-out/(:num)', 'Asset::storeAssetOut/$1');
+        $routes->get('asset-return/(:num)', 'Asset::assetReturn/$1');
+        $routes->post('asset-return/(:num)', 'Asset::storeAssetReturn/$1');
     }
 );
 
@@ -154,6 +158,35 @@ $routes->group(
 
 /*
 |--------------------------------------------------------------------------
+| Stock Items
+|--------------------------------------------------------------------------
+*/
+
+$routes->group(
+    'stock-items',
+    ['filter' => 'auth'],
+    static function ($routes) {
+
+        $routes->get('/', 'StockItem::index');
+        $routes->get('create', 'StockItem::create');
+        $routes->post('store', 'StockItem::store');
+        $routes->get('edit/(:num)', 'StockItem::edit/$1');
+        $routes->post('update/(:num)', 'StockItem::update/$1');
+        $routes->get('stock-in/(:num)', 'StockItem::stockIn/$1');
+        $routes->post('stock-in/(:num)', 'StockItem::storeStockIn/$1');
+        $routes->get('stock-out/(:num)', 'StockItem::stockOut/$1');
+        $routes->post('stock-out/(:num)', 'StockItem::storeStockOut/$1');
+        $routes->get('transfer/(:num)', 'StockItem::transfer/$1');
+        $routes->post('transfer/(:num)', 'StockItem::storeTransfer/$1');
+        $routes->get('adjustment/(:num)', 'StockItem::adjustment/$1');
+        $routes->post('adjustment/(:num)', 'StockItem::storeAdjustment/$1');
+        $routes->get('(:num)', 'StockItem::show/$1');
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
 | Stock Opname
 |--------------------------------------------------------------------------
 */
@@ -174,6 +207,11 @@ $routes->group(
         );
 
         $routes->post(
+            'stock-detail/(:num)/update',
+            'StockOpname::updateStockDetail/$1'
+        );
+
+        $routes->post(
             '(:num)/finish',
             'StockOpname::finish/$1'
         );
@@ -183,111 +221,17 @@ $routes->group(
 
 /*
 |--------------------------------------------------------------------------
-| Maintenance
+| Stock Movement
 |--------------------------------------------------------------------------
-|
-| Akses utama membutuhkan maintenance.view.
-|
 */
 
 $routes->group(
-    'maintenances',
-    [
-        'filter' => [
-            'auth',
-            'permission:maintenance.view',
-        ],
-    ],
+    'stock-movements',
+    ['filter' => 'auth'],
     static function ($routes) {
 
-        $routes->get(
-            '/',
-            'Maintenance::index'
-        );
-
-        $routes->get(
-            'create',
-            'Maintenance::create',
-            [
-                'filter' => 'permission:maintenance.create',
-            ]
-        );
-
-        $routes->post(
-            'store',
-            'Maintenance::store',
-            [
-                'filter' => 'permission:maintenance.create',
-            ]
-        );
-
-        $routes->get(
-            'edit/(:num)',
-            'Maintenance::edit/$1',
-            [
-                'filter' => [
-                    'auth',
-                    'permission:maintenance.update',
-                ],
-            ]
-        );
-
-        $routes->post(
-            'update/(:num)',
-            'Maintenance::update/$1',
-            [
-                'filter' => 'permission:maintenance.update',
-            ]
-        );
-
-        $routes->post(
-            'delete/(:num)',
-            'Maintenance::delete/$1',
-            [
-                'filter' => 'permission:maintenance.delete',
-            ]
-        );
-
-        $routes->post(
-            'approve/(:num)',
-            'Maintenance::approve/$1',
-            [
-                'filter' => 'permission:maintenance.approve',
-            ]
-        );
-
-        $routes->post(
-            'reject/(:num)',
-            'Maintenance::reject/$1',
-            [
-                'filter' => 'permission:maintenance.approve',
-            ]
-        );
-        $routes->post(
-            'start/(:num)',
-            'Maintenance::start/$1',
-            [
-                'filter' => [
-                    'auth',
-                    'permission:maintenance.update',
-                ],
-            ]
-        );
-
-        $routes->post(
-            'complete/(:num)',
-            'Maintenance::complete/$1',
-            [
-                'filter' => [
-                    'auth',
-                    'permission:maintenance.update',
-                ],
-            ]
-        );
-        $routes->get(
-            '(:num)',
-            'Maintenance::show/$1'
-        );
+        $routes->get('/', 'InventoryTransaction::index');
+        $routes->get('(:num)', 'InventoryTransaction::show/$1');
     }
 );
 

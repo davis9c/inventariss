@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class InventoryTransactionModel extends Model
+{
+    protected $table = 'inventory_transactions';
+    protected $primaryKey = 'id';
+
+    protected $allowedFields = [
+        'transaction_code',
+        'transaction_date',
+        'transaction_type',
+        'item_type',
+        'asset_id',
+        'stock_item_id',
+        'quantity',
+        'from_location_id',
+        'to_location_id',
+        'reference_type',
+        'reference_id',
+        'reason',
+        'notes',
+        'created_by',
+    ];
+
+    protected $useTimestamps = true;
+
+    public function generateCode(): string
+    {
+        return 'TRX-' . date('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
+    }
+}

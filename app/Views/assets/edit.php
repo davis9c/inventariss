@@ -337,14 +337,14 @@
                                 Dipinjam
                             </option>
 
-                            <option value="Maintenance"
-                                <?= $assetStatus === 'Maintenance' ? 'selected' : '' ?>>
-                                Maintenance
-                            </option>
-
                             <option value="Tidak Digunakan"
                                 <?= $assetStatus === 'Tidak Digunakan' ? 'selected' : '' ?>>
                                 Tidak Digunakan
+                            </option>
+
+                            <option value="Keluar Perusahaan"
+                                <?= $assetStatus === 'Keluar Perusahaan' ? 'selected' : '' ?>>
+                                Keluar Perusahaan
                             </option>
 
                         </select>

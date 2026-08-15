@@ -7,8 +7,24 @@
 
     <title><?= $title ?? 'Inventaris' ?></title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <?php
+        $assetVer = max(
+            filemtime(FCPATH . 'js/inventaris.js') ?: 0,
+            filemtime(FCPATH . 'vendor/jquery.min.js') ?: 0,
+            filemtime(FCPATH . 'vendor/dataTables.min.js') ?: 0,
+            filemtime(FCPATH . 'vendor/bootstrap.bundle.min.js') ?: 0
+        ) ?: time();
+    ?>
+
+    <link href="<?= base_url('vendor/bootstrap.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
+    <link href="<?= base_url('vendor/dataTables.bootstrap5.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
+
+    <script src="<?= base_url('vendor/bootstrap.bundle.min.js') ?>?v=<?= $assetVer ?>"></script>
+    <script src="<?= base_url('vendor/jquery.min.js') ?>?v=<?= $assetVer ?>"></script>
+    <script src="<?= base_url('vendor/dataTables.min.js') ?>?v=<?= $assetVer ?>"></script>
+    <script src="<?= base_url('vendor/dataTables.bootstrap5.min.js') ?>?v=<?= $assetVer ?>"></script>
+    <script>window.inventarisBaseUrl = '<?= base_url() ?>';</script>
+    <script src="<?= base_url('js/inventaris.js') ?>?v=<?= $assetVer ?>"></script>
 </head>
 
 <body>
