@@ -345,11 +345,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tahun Perolehan</label>
-                            <input type="number" name="acquisition_year" class="form-control" value="<?= esc($asset['acquisition_year']) ?>">
+                            <select name="acquisition_year" class="form-select">
+                                <?= year_options($asset['acquisition_year']) ?>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Harga Perolehan</label>
-                            <input type="number" step="0.01" name="acquisition_price" class="form-control" value="<?= esc($asset['acquisition_price']) ?>">
+                            <input type="number" step="0.01" min="1000" name="acquisition_price" class="form-control" value="<?= esc($asset['acquisition_price']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kondisi</label>
@@ -391,7 +393,7 @@
      id="mutasiModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="mutasiForm"
                   method="post"
@@ -454,7 +456,7 @@
      id="assetOutModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetOutForm"
                   method="post"
@@ -466,6 +468,35 @@
                 <div class="modal-body">
                     <div class="alert alert-danger py-2 mb-3">
                         Barang akan dicatat keluar dari tanggung jawab perusahaan.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jenis Pengeluaran</label>
+                        <select name="outbound_type" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <?php foreach (['Pemindahan', 'Peminjaman', 'Hibah', 'Penjualan', 'Penghapusan', 'Retur', 'Lainnya'] as $type): ?>
+                                <option value="<?= esc($type) ?>"><?= esc($type) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tujuan/Penerima</label>
+                        <input type="text" name="recipient_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit/Departemen Tujuan</label>
+                        <input type="text" name="destination_unit" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nomor Dokumen</label>
+                        <input type="text" name="document_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pihak Menyerahkan</label>
+                        <input type="text" name="handed_over_by" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pihak Menerima</label>
+                        <input type="text" name="received_by" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
@@ -497,7 +528,7 @@
      id="assetReturnModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetReturnForm"
                   method="post"

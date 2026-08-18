@@ -11,7 +11,7 @@ use CodeIgniter\Router\RouteCollection;
 |--------------------------------------------------------------------------
 */
 
-$routes->get('/', 'Setup::index');
+$routes->get('/', 'Landing::index');
 $routes->get('setup', 'Setup::index');
 $routes->post('setup', 'Setup::create');
 
@@ -234,6 +234,14 @@ $routes->group(
         $routes->get('(:num)', 'InventoryTransaction::show/$1');
     }
 );
+
+$routes->group('attachments', ['filter' => 'auth'], static function ($routes) {
+    $routes->post('document/(:segment)/(:num)', 'Attachment::storeDocument/$1/$2');
+    $routes->post('photo/(:segment)/(:num)', 'Attachment::storePhoto/$1/$2');
+    $routes->post('evidence/(:num)', 'Attachment::storeEvidence/$1');
+    $routes->post('photo/(:num)/delete', 'Attachment::deletePhoto/$1');
+    $routes->get('file/(:segment)/(:num)', 'Attachment::file/$1/$2');
+});
 
 
 /*

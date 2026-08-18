@@ -226,12 +226,10 @@
                             Tahun Perolehan
                         </label>
 
-                        <input type="number"
-                            name="acquisition_year"
-                            class="form-control <?= isset($errors['acquisition_year']) ? 'is-invalid' : '' ?>"
-                            value="<?= esc(old('acquisition_year', $asset['acquisition_year'] ?? '')) ?>"
-                            min="1900"
-                            max="<?= date('Y') ?>">
+                        <select name="acquisition_year"
+                            class="form-select <?= isset($errors['acquisition_year']) ? 'is-invalid' : '' ?>">
+                            <?= year_options(old('acquisition_year', $asset['acquisition_year'] ?? '')) ?>
+                        </select>
 
                         <?php if (isset($errors['acquisition_year'])): ?>
                             <div class="invalid-feedback">
@@ -253,7 +251,7 @@
                             name="acquisition_price"
                             class="form-control <?= isset($errors['acquisition_price']) ? 'is-invalid' : '' ?>"
                             value="<?= esc(old('acquisition_price', $asset['acquisition_price'] ?? '')) ?>"
-                            min="0"
+                            min="1000"
                             step="0.01">
 
                         <?php if (isset($errors['acquisition_price'])): ?>

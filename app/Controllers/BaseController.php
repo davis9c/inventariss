@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\AuditLogModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -64,6 +65,38 @@ abstract class BaseController extends Controller
             'success' => false,
             'message' => $message,
         ], $status);
+    }
+
+    /** Server-side lock: regular users and Admin may edit only for 96 hours. */
+    protected function mayEdit(array $record): bool
+    {
+        if (isSuperAdmin() || empty($record['created_at'])) {
+            return true;
+        }
+
+        return strtotime($record['created_at']) + (96 * 3600) >= time();
+    }
+
+    protected function editLockedResponse(bool $isAjax)
+    {
+        $message = 'Data sudah terkunci setelah 96 jam. Hanya Super Admin yang dapat mengubahnya.';
+        return $isAjax ? $this->respondError($message, 403) : redirect()->back()->with('error', $message);
+    }
+
+    /** Persist an immutable snapshot for every important application action. */
+    protected function audit(string $action, string $module, ?int $recordId, ?array $before = null, ?array $after = null, ?string $notes = null): void
+    {
+        (new AuditLogModel())->insert([
+            'user_id' => session()->get('user_id'),
+            'role_name' => implode(', ', session()->get('roles') ?? []),
+            'action' => $action,
+            'module' => $module,
+            'record_id' => $recordId,
+            'before_data' => $before ? json_encode($before, JSON_UNESCAPED_UNICODE) : null,
+            'after_data' => $after ? json_encode($after, JSON_UNESCAPED_UNICODE) : null,
+            'notes' => $notes,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     /**

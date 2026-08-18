@@ -22,4 +22,5 @@ class AssetMutationModel extends Model
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 }

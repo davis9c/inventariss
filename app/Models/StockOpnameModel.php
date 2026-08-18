@@ -19,4 +19,5 @@ class StockOpnameModel extends Model
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 }

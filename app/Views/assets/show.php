@@ -49,6 +49,11 @@
 
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header d-flex justify-content-between"><strong>Dokumen Barang</strong><button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#documentModal">Tambah Dokumen</button></div><div class="card-body"><?php if (empty($documents)): ?><p class="text-muted mb-0">Belum ada dokumen.</p><?php else: ?><ul class="mb-0"><?php foreach ($documents as $document): ?><li><a target="_blank" href="<?= base_url('attachments/file/document/' . $document['id']) ?>"><?= esc($document['document_type']) ?> — <?= esc($document['document_number'] ?: $document['original_name']) ?></a> <small class="text-muted">(<?= esc($document['created_at']) ?>)</small></li><?php endforeach; ?></ul><?php endif; ?></div></div></div>
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header d-flex justify-content-between"><strong>Histori Foto Kondisi</strong><button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#photoModal">Tambah Foto</button></div><div class="card-body"><?php if (empty($photos)): ?><p class="text-muted mb-0">Belum ada foto.</p><?php else: ?><div class="row g-2"><?php foreach ($photos as $photo): ?><div class="col-4"><a href="<?= base_url('attachments/file/photo/' . $photo['id']) ?>" target="_blank"><img class="img-fluid rounded" src="<?= base_url('attachments/file/photo/' . $photo['id']) ?>" alt="<?= esc($photo['caption'] ?: 'Foto barang') ?>"></a><small><?= esc($photo['caption']) ?></small></div><?php endforeach; ?></div><?php endif; ?></div></div></div>
+    </div>
+
 
     <!-- INFORMASI BARANG -->
 
@@ -280,6 +285,9 @@
 
 </div>
 
+<div class="modal fade" id="documentModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/document/asset/' . $asset['id']) ?>"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Dokumen</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input name="document_type" class="form-control mb-2" placeholder="Jenis dokumen" required><input name="document_number" class="form-control mb-2" placeholder="Nomor dokumen"><input name="document_date" type="date" class="form-control mb-2"><input name="valid_until" type="date" class="form-control mb-2" placeholder="Berlaku sampai"><input name="file" type="file" class="form-control" accept=".pdf,image/*" required></div><div class="modal-footer"><button class="btn btn-primary">Simpan</button></div></form></div></div>
+<div class="modal fade" id="photoModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/photo/asset/' . $asset['id']) ?>"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input name="caption" class="form-control mb-2" placeholder="Kondisi/keterangan foto"><input name="file" type="file" class="form-control" accept="image/*" capture="environment" required></div><div class="modal-footer"><button class="btn btn-primary">Simpan Foto</button></div></form></div></div>
+
 <!-- ===================================================== -->
 <!-- MODAL EDIT -->
 <!-- ===================================================== -->
@@ -345,11 +353,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tahun Perolehan</label>
-                            <input type="number" name="acquisition_year" class="form-control" value="<?= esc($asset['acquisition_year']) ?>">
+                            <select name="acquisition_year" class="form-select">
+                                <?= year_options($asset['acquisition_year']) ?>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Harga Perolehan</label>
-                            <input type="number" step="0.01" name="acquisition_price" class="form-control" value="<?= esc($asset['acquisition_price']) ?>">
+                            <input type="number" step="0.01" min="1000" name="acquisition_price" class="form-control" value="<?= esc($asset['acquisition_price']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kondisi</label>
@@ -391,7 +401,7 @@
      id="mutasiModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="mutasiForm"
                   method="post"
@@ -454,7 +464,7 @@
      id="assetOutModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetOutForm"
                   method="post"
@@ -466,6 +476,35 @@
                 <div class="modal-body">
                     <div class="alert alert-danger py-2 mb-3">
                         Barang akan dicatat keluar dari tanggung jawab perusahaan.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jenis Pengeluaran</label>
+                        <select name="outbound_type" class="form-select" required>
+                            <option value="">-- Pilih --</option>
+                            <?php foreach (['Pemindahan', 'Peminjaman', 'Hibah', 'Penjualan', 'Penghapusan', 'Retur', 'Lainnya'] as $type): ?>
+                                <option value="<?= esc($type) ?>"><?= esc($type) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tujuan/Penerima</label>
+                        <input type="text" name="recipient_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit/Departemen Tujuan</label>
+                        <input type="text" name="destination_unit" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nomor Dokumen</label>
+                        <input type="text" name="document_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pihak Menyerahkan</label>
+                        <input type="text" name="handed_over_by" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pihak Menerima</label>
+                        <input type="text" name="received_by" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
@@ -497,7 +536,7 @@
      id="assetReturnModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetReturnForm"
                   method="post"
@@ -695,4 +734,3 @@
 })();
 </script>
 <?= view('layout/footer') ?>
-

@@ -6,6 +6,7 @@ use App\Models\LocationModel;
 use App\Models\AssetModel;
 use App\Models\UnitModel;
 use App\Models\UnitLocationModel;
+use App\Models\InventoryPhotoModel;
 
 class Location extends BaseController
 {
@@ -63,6 +64,10 @@ class Location extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        if (!$this->mayEdit($location)) {
+            return $this->editLockedResponse(false);
+        }
+
         $units = $this->unitModel
             ->where('is_active', 1)
             ->orderBy('name', 'ASC')
@@ -97,6 +102,7 @@ class Location extends BaseController
         $db->transStart();
 
         // Update lokasi
+        $before = $location;
         $this->locationModel->update($id, [
             'name'        => $this->request->getPost('name'),
             'building'    => $this->request->getPost('building'),
@@ -105,6 +111,7 @@ class Location extends BaseController
             'description' => $this->request->getPost('description'),
             'is_active'   => $this->request->getPost('is_active') ? 1 : 0,
         ]);
+        $this->audit('UPDATE', 'location', (int) $id, $before, $this->locationModel->find($id));
 
         // Hapus relasi unit lama
         $this->unitLocationModel
@@ -144,7 +151,11 @@ class Location extends BaseController
 
     public function delete($id)
     {
+        $location = $this->locationModel->find($id);
+        if (!$location) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        if (!$this->mayEdit($location)) return $this->editLockedResponse(false);
         $this->locationModel->delete($id);
+        $this->audit('SOFT_DELETE', 'location', (int) $id, $location);
 
         return redirect()->to('/locations')
             ->with('success', 'Lokasi berhasil dihapus.');
@@ -201,6 +212,7 @@ class Location extends BaseController
             'location' => $location,
             'units'    => $units,
             'assets'   => $assets,
+            'photos'   => (new InventoryPhotoModel())->where(['owner_type' => 'location', 'owner_id' => $id])->orderBy('created_at', 'DESC')->findAll(),
         ]);
     }
 }

@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Models\AssetModel;
 use App\Models\CategoryModel;
 use App\Models\InventoryTransactionModel;
+use App\Models\InventoryDocumentModel;
+use App\Models\InventoryPhotoModel;
 use App\Models\LocationModel;
 use App\Models\StockOpnameDetailModel;
 use App\Models\UnitModel;
@@ -219,6 +221,12 @@ class Asset extends BaseController
             'serial_number'     => $this->request->getPost('serial_number'),
             'acquisition_year'  => $this->request->getPost('acquisition_year') ?: null,
             'acquisition_price' => $this->request->getPost('acquisition_price') ?: 0,
+            'acquisition_source' => $this->request->getPost('acquisition_source'),
+            'acquisition_date' => $this->request->getPost('acquisition_date') ?: null,
+            'acquisition_document_number' => $this->request->getPost('acquisition_document_number'),
+            'supplier_name' => $this->request->getPost('supplier_name'),
+            'funding_source' => $this->request->getPost('funding_source'),
+            'acquisition_notes' => $this->request->getPost('acquisition_notes'),
             'condition_status'  => $this->request->getPost('condition_status'),
             'asset_status'      => $this->request->getPost('asset_status'),
             'description'       => $this->request->getPost('description'),
@@ -227,13 +235,17 @@ class Asset extends BaseController
         // Catat perolehan barang
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => date('Y-m-d'),
+            'transaction_date' => $this->request->getPost('acquisition_date') ?: date('Y-m-d'),
             'transaction_type' => 'Perolehan',
             'item_type'        => 'Aset',
             'asset_id'         => $this->assetModel->getInsertID(),
             'quantity'         => 1,
             'to_location_id'   => $locationId,
-            'reason'           => 'Perolehan barang',
+            'reason'           => 'Perolehan barang: ' . ($this->request->getPost('acquisition_source') ?: 'Tidak dicatat'),
+            'document_number'  => $this->request->getPost('acquisition_document_number'),
+            'recipient_name'   => $this->request->getPost('supplier_name'),
+            'notes'            => $this->request->getPost('acquisition_notes'),
+            'created_by'       => session()->get('user_id'),
         ]);
 
         $db->transComplete();
@@ -248,6 +260,8 @@ class Asset extends BaseController
                 ->withInput()
                 ->with('error', 'Barang gagal disimpan.');
         }
+
+        $this->audit('CREATE', 'asset', $this->assetModel->getInsertID(), null, $this->assetModel->find($this->assetModel->getInsertID()));
 
         if ($isAjax) {
             return $this->respondSuccess('Barang berhasil ditambahkan.', [
@@ -275,6 +289,10 @@ class Asset extends BaseController
                     'error',
                     'Anda tidak memiliki akses ke aset tersebut.'
                 );
+        }
+
+        if (!$this->mayEdit($asset)) {
+            return $this->editLockedResponse(false);
         }
 
         $locationBuilder = $this->locationModel
@@ -331,6 +349,10 @@ class Asset extends BaseController
                 );
         }
 
+        if (!$this->mayEdit($asset)) {
+            return $this->editLockedResponse($isAjax);
+        }
+
         if (!$this->validate($this->validationRules($id))) {
             if ($isAjax) {
                 return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
@@ -358,6 +380,8 @@ class Asset extends BaseController
                 );
         }
 
+        $before = $asset;
+        $wasLocked = !empty($before['created_at']) && strtotime($before['created_at']) + (96 * 3600) < time();
         $this->assetModel->update($id, [
             'asset_code'        => $this->request->getPost('asset_code'),
             'name'              => $this->request->getPost('name'),
@@ -369,10 +393,17 @@ class Asset extends BaseController
             'serial_number'     => $this->request->getPost('serial_number'),
             'acquisition_year'  => $this->request->getPost('acquisition_year') ?: null,
             'acquisition_price' => $this->request->getPost('acquisition_price') ?: 0,
+            'acquisition_source' => $this->request->getPost('acquisition_source'),
+            'acquisition_date' => $this->request->getPost('acquisition_date') ?: null,
+            'acquisition_document_number' => $this->request->getPost('acquisition_document_number'),
+            'supplier_name' => $this->request->getPost('supplier_name'),
+            'funding_source' => $this->request->getPost('funding_source'),
+            'acquisition_notes' => $this->request->getPost('acquisition_notes'),
             'condition_status'  => $this->request->getPost('condition_status'),
             'asset_status'      => $this->request->getPost('asset_status'),
             'description'       => $this->request->getPost('description'),
         ]);
+        $this->audit('UPDATE', 'asset', (int) $id, $before, $this->assetModel->find($id), isSuperAdmin() && $wasLocked ? 'Koreksi Super Admin setelah batas 96 jam.' : null);
 
         if ($isAjax) {
             return $this->respondSuccess('Barang berhasil diperbarui.');
@@ -410,6 +441,10 @@ class Asset extends BaseController
                 );
         }
 
+        if (!$this->mayEdit($asset)) {
+            return $this->editLockedResponse($isAjax);
+        }
+
         // Jangan hapus barang jika masih memiliki riwayat pengelolaan
         $usedCount = $this->transactionModel
             ->where('asset_id', $id)
@@ -432,6 +467,7 @@ class Asset extends BaseController
         }
 
         $this->assetModel->delete($id);
+        $this->audit('SOFT_DELETE', 'asset', (int) $id, $asset);
 
         if ($isAjax) {
             return $this->respondSuccess('Barang berhasil dihapus.');
@@ -547,6 +583,8 @@ class Asset extends BaseController
             'asset'        => $asset,
             'movements'    => $movements,
             'stockOpnames' => $stockOpnames,
+            'documents' => (new InventoryDocumentModel())->where(['owner_type' => 'asset', 'owner_id' => $id])->orderBy('created_at', 'DESC')->findAll(),
+            'photos' => (new InventoryPhotoModel())->where(['owner_type' => 'asset', 'owner_id' => $id])->orderBy('created_at', 'DESC')->findAll(),
             'categories'   => $this->categoryModel
                 ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
@@ -622,6 +660,12 @@ class Asset extends BaseController
 
         if (!$this->validate([
             'transaction_date' => 'required|valid_date',
+            'outbound_type'    => 'required|max_length[50]',
+            'recipient_name'   => 'required|max_length[150]',
+            'destination_unit' => 'permit_empty|max_length[150]',
+            'document_number'  => 'permit_empty|max_length[100]',
+            'handed_over_by'   => 'permit_empty|max_length[150]',
+            'received_by'      => 'permit_empty|max_length[150]',
             'reason'           => 'permit_empty|max_length[255]',
             'notes'            => 'permit_empty',
         ])) {
@@ -647,6 +691,12 @@ class Asset extends BaseController
             'transaction_code' => $this->transactionModel->generateCode(),
             'transaction_date' => $this->request->getPost('transaction_date'),
             'transaction_type' => 'Keluar Perusahaan',
+            'outbound_type'    => $this->request->getPost('outbound_type'),
+            'recipient_name'   => $this->request->getPost('recipient_name'),
+            'destination_unit' => $this->request->getPost('destination_unit'),
+            'document_number'  => $this->request->getPost('document_number'),
+            'handed_over_by'   => $this->request->getPost('handed_over_by'),
+            'received_by'      => $this->request->getPost('received_by'),
             'item_type'        => 'Aset',
             'asset_id'         => $id,
             'quantity'         => 1,
@@ -670,6 +720,7 @@ class Asset extends BaseController
                 ->withInput()
                 ->with('error', 'Transaksi gagal disimpan.');
         }
+        $this->audit('CREATE', 'inventory_transaction', $transactionId, null, $this->transactionModel->find($transactionId));
 
         if ($isAjax) {
             return $this->respondSuccess(
@@ -847,14 +898,26 @@ class Asset extends BaseController
             ? "required|is_unique[assets.asset_code,id,{$id}]"
             : 'required|is_unique[assets.asset_code]';
 
+        $acquisitionSourceRule = $id
+            ? 'permit_empty|max_length[50]'
+            : 'required|max_length[50]';
+        $acquisitionDateRule = $id
+            ? 'permit_empty|valid_date'
+            : 'required|valid_date';
+
         return [
             'asset_code'        => $assetCodeRule,
             'name'              => 'required',
             'category_id'       => 'required|is_natural_no_zero',
             'unit_id'           => 'required|is_natural_no_zero',
             'location_id'       => 'required|is_natural_no_zero',
-            'acquisition_year'  => 'permit_empty|numeric|greater_than_equal_to[1900]|less_than_equal_to[' . date('Y') . ']',
-            'acquisition_price' => 'permit_empty|decimal',
+            'acquisition_year'  => 'permit_empty|numeric|greater_than_equal_to[2000]|less_than_equal_to[' . ((int) date('Y') + 2) . ']',
+            'acquisition_price' => 'permit_empty|decimal|greater_than_equal_to[1000]',
+            'acquisition_source' => $acquisitionSourceRule,
+            'acquisition_date' => $acquisitionDateRule,
+            'acquisition_document_number' => 'permit_empty|max_length[100]',
+            'supplier_name' => 'permit_empty|max_length[150]',
+            'funding_source' => 'permit_empty|max_length[150]',
             'condition_status'  => 'required|in_list[Baik,Rusak Ringan,Rusak Berat]',
             'asset_status'      => 'required|in_list[Aktif,Dipinjam,Tidak Digunakan,Keluar Perusahaan]',
         ];

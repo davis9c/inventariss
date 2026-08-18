@@ -237,6 +237,10 @@ class StockItem extends BaseController
                 );
         }
 
+        if (!$this->mayEdit($item)) {
+            return $this->editLockedResponse(false);
+        }
+
         $locationBuilder = $this->locationModel
             ->where('is_active', 1);
 
@@ -291,6 +295,10 @@ class StockItem extends BaseController
                 );
         }
 
+        if (!$this->mayEdit($item)) {
+            return $this->editLockedResponse($isAjax);
+        }
+
         if (!$this->validate($this->validationRules($id))) {
             if ($isAjax) {
                 return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
@@ -319,6 +327,7 @@ class StockItem extends BaseController
         }
 
         // Stok hanya berubah melalui transaksi masuk/keluar
+        $before = $item;
         $this->itemModel->update($id, [
             'item_code'   => $this->request->getPost('item_code'),
             'name'        => $this->request->getPost('name'),
@@ -329,6 +338,7 @@ class StockItem extends BaseController
             'description' => $this->request->getPost('description'),
             'is_active'   => $this->request->getPost('is_active') ? 1 : 0,
         ]);
+        $this->audit('UPDATE', 'stock_item', (int) $id, $before, $this->itemModel->find($id));
 
         if ($isAjax) {
             return $this->respondSuccess('Barang stok berhasil diperbarui.');
@@ -617,7 +627,7 @@ class StockItem extends BaseController
                 );
         }
 
-        if (!$this->validate($this->transactionRules())) {
+        if (!$this->validate($this->transactionRules(true))) {
             if ($isAjax) {
                 return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
             }
@@ -669,6 +679,12 @@ class StockItem extends BaseController
             'transaction_code' => $this->transactionModel->generateCode(),
             'transaction_date' => $this->request->getPost('transaction_date'),
             'transaction_type' => 'Keluar',
+            'outbound_type'    => $this->request->getPost('outbound_type'),
+            'recipient_name'   => $this->request->getPost('recipient_name'),
+            'destination_unit' => $this->request->getPost('destination_unit'),
+            'document_number'  => $this->request->getPost('document_number'),
+            'handed_over_by'   => $this->request->getPost('handed_over_by'),
+            'received_by'      => $this->request->getPost('received_by'),
             'item_type'        => 'Barang Stok',
             'stock_item_id'    => $id,
             'quantity'         => $quantity,
@@ -693,6 +709,7 @@ class StockItem extends BaseController
                 ->withInput()
                 ->with('error', 'Transaksi stok keluar gagal disimpan.');
         }
+        $this->audit('CREATE', 'inventory_transaction', $transactionId, null, $this->transactionModel->find($transactionId));
 
         if ($isAjax) {
             return $this->respondSuccess('Stok keluar berhasil dicatat.', [
@@ -1083,12 +1100,18 @@ class StockItem extends BaseController
         ];
     }
 
-    private function transactionRules(): array
+    private function transactionRules(bool $isOutbound = false): array
     {
         return [
             'quantity'         => 'required|is_natural_no_zero',
             'transaction_date' => 'required|valid_date',
             'notes'            => 'permit_empty',
+            'outbound_type'    => ($isOutbound ? 'required' : 'permit_empty') . '|max_length[50]',
+            'recipient_name'   => ($isOutbound ? 'required' : 'permit_empty') . '|max_length[150]',
+            'destination_unit' => 'permit_empty|max_length[150]',
+            'document_number'  => 'permit_empty|max_length[100]',
+            'handed_over_by'   => 'permit_empty|max_length[150]',
+            'received_by'      => 'permit_empty|max_length[150]',
         ];
     }
 }

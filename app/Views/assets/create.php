@@ -182,12 +182,10 @@
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Tahun Perolehan</label>
 
-                        <input type="number"
-                            name="acquisition_year"
-                            class="form-control"
-                            min="1900"
-                            max="2100"
-                            value="<?= old('acquisition_year') ?>">
+                        <select name="acquisition_year"
+                            class="form-select <?= isset($errors['acquisition_year']) ? 'is-invalid' : '' ?>">
+                            <?= year_options(old('acquisition_year') ?: date('Y')) ?>
+                        </select>
                     </div>
 
                     <!-- Harga -->
@@ -197,10 +195,18 @@
                         <input type="number"
                             name="acquisition_price"
                             class="form-control"
-                            min="0"
+                            min="1000"
                             step="0.01"
                             value="<?= old('acquisition_price') ?>">
                     </div>
+
+                    <div class="col-12"><hr><h5>Informasi Perolehan</h5></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Sumber Perolehan</label><select name="acquisition_source" class="form-select" required><option value="">-- Pilih sumber --</option><?php foreach (['Pembelian','Hibah','Donasi','Transfer dari unit lain','Pengadaan proyek','Penerimaan dari pihak ketiga','Lainnya'] as $source): ?><option value="<?= esc($source) ?>" <?= old('acquisition_source') === $source ? 'selected' : '' ?>><?= esc($source) ?></option><?php endforeach; ?></select></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tanggal Perolehan</label><input type="date" name="acquisition_date" class="form-control" value="<?= old('acquisition_date', date('Y-m-d')) ?>" required></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Nomor Dokumen/Invoice</label><input type="text" name="acquisition_document_number" class="form-control" value="<?= old('acquisition_document_number') ?>"></div>
+                    <div class="col-md-6 mb-3"><label class="form-label">Supplier/Vendor</label><input type="text" name="supplier_name" class="form-control" value="<?= old('supplier_name') ?>"></div>
+                    <div class="col-md-6 mb-3"><label class="form-label">Sumber Dana</label><input type="text" name="funding_source" class="form-control" value="<?= old('funding_source') ?>"></div>
+                    <div class="col-12 mb-3"><label class="form-label">Keterangan Perolehan</label><textarea name="acquisition_notes" class="form-control" rows="2"><?= old('acquisition_notes') ?></textarea></div>
 
                     <!-- Kondisi -->
                     <div class="col-md-6 mb-3">

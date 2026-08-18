@@ -19,4 +19,5 @@ class LocationModel extends Model
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 }

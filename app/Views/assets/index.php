@@ -121,11 +121,43 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tahun Perolehan</label>
-                            <input type="number" name="acquisition_year" class="form-control">
+                            <select name="acquisition_year" class="form-select">
+                                <?= year_options(date('Y')) ?>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Harga Perolehan</label>
-                            <input type="number" step="0.01" name="acquisition_price" class="form-control">
+                            <input type="number" step="0.01" min="1000" name="acquisition_price" class="form-control">
+                        </div>
+                        <div class="col-12"><hr><h6>Informasi Perolehan</h6></div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sumber Perolehan</label>
+                            <select name="acquisition_source" class="form-select" required>
+                                <option value="">-- Pilih sumber --</option>
+                                <?php foreach (['Pembelian', 'Hibah', 'Donasi', 'Transfer dari unit lain', 'Pengadaan proyek', 'Penerimaan dari pihak ketiga', 'Lainnya'] as $source): ?>
+                                    <option value="<?= esc($source) ?>"><?= esc($source) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tanggal Perolehan</label>
+                            <input type="date" name="acquisition_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nomor Dokumen/Invoice</label>
+                            <input type="text" name="acquisition_document_number" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Supplier/Vendor</label>
+                            <input type="text" name="supplier_name" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sumber Dana</label>
+                            <input type="text" name="funding_source" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Keterangan Perolehan</label>
+                            <textarea name="acquisition_notes" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kondisi</label>
@@ -218,11 +250,43 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tahun Perolehan</label>
-                            <input type="number" name="acquisition_year" class="form-control">
+                            <select name="acquisition_year" class="form-select">
+                                <?= year_options() ?>
+                            </select>
+                        </div>
+<div class="col-md-6">
+                            <label class="form-label">Harga Perolehan</label>
+                            <input type="number" step="0.01" min="1000" name="acquisition_price" class="form-control">
+                        </div>
+                        <div class="col-12"><hr><h6>Informasi Perolehan</h6></div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sumber Perolehan</label>
+                            <select name="acquisition_source" class="form-select" required>
+                                <option value="">-- Pilih sumber --</option>
+                                <?php foreach (['Pembelian', 'Hibah', 'Donasi', 'Transfer dari unit lain', 'Pengadaan proyek', 'Penerimaan dari pihak ketiga', 'Lainnya'] as $source): ?>
+                                    <option value="<?= esc($source) ?>"><?= esc($source) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Harga Perolehan</label>
-                            <input type="number" step="0.01" name="acquisition_price" class="form-control">
+                            <label class="form-label">Tanggal Perolehan</label>
+                            <input type="date" name="acquisition_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nomor Dokumen/Invoice</label>
+                            <input type="text" name="acquisition_document_number" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Supplier/Vendor</label>
+                            <input type="text" name="supplier_name" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sumber Dana</label>
+                            <input type="text" name="funding_source" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Keterangan Perolehan</label>
+                            <textarea name="acquisition_notes" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kondisi</label>
@@ -255,7 +319,6 @@
         </div>
     </div>
 </div>
-
 
 
 <script>
@@ -310,12 +373,24 @@
             var row = dt.row(editBtn.closest('tr')).data();
             if (!row) return;
             editForm.action = Inventaris.baseUrl + 'assets/update/' + row.id;
-            ['asset_code', 'name', 'brand', 'model', 'serial_number', 'acquisition_year', 'acquisition_price', 'description'].forEach(function (name) {
+            ['asset_code', 'name', 'brand', 'model', 'serial_number', 'acquisition_price', 'acquisition_document_number', 'supplier_name', 'funding_source', 'acquisition_notes', 'description'].forEach(function (name) {
                 editForm.elements[name].value = (row[name] === null || row[name] === undefined) ? '' : row[name];
             });
-            ['category_id', 'unit_id', 'location_id', 'condition_status', 'asset_status'].forEach(function (name) {
+            var yearSel = editForm.elements['acquisition_year'];
+            var yearVal = row.acquisition_year || '';
+            if (yearSel) {
+                if (yearVal && !yearSel.querySelector('option[value="' + yearVal + '"]')) {
+                    var opt = document.createElement('option');
+                    opt.value = yearVal;
+                    opt.textContent = yearVal + ' (di luar rentang)';
+                    yearSel.appendChild(opt);
+                }
+                yearSel.value = yearVal;
+            }
+            ['category_id', 'unit_id', 'location_id', 'condition_status', 'asset_status', 'acquisition_source'].forEach(function (name) {
                 if (editForm.elements[name] && editForm.elements[name].value) editForm.elements[name].value = row[name];
             });
+            editForm.elements['acquisition_date'].value = row.acquisition_date || new Date().toISOString().slice(0, 10);
             if (!editModal) editModal = Inventaris.openModal('editAssetModal');
             else editModal.show();
             return;

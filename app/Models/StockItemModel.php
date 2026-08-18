@@ -22,4 +22,5 @@ class StockItemModel extends Model
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 }

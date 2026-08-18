@@ -176,26 +176,42 @@ class DatabaseSeeder extends Seeder
 
     private function seedLocations()
     {
+        $locations = [
+            [
+                'name'        => 'Kantor Pusat',
+                'building'    => 'Gedung A',
+                'floor'       => 'Lantai 1',
+                'room'        => 'A-101',
+                'description' => 'Lokasi utama kantor pusat.',
+            ],
+            [
+                'name'        => 'Kantor Cabang',
+                'building'    => 'Gedung B',
+                'floor'       => 'Lantai 1',
+                'room'        => 'B-101',
+                'description' => 'Lokasi kantor cabang.',
+            ],
+        ];
+
         $builder = $this->db->table('locations');
 
-        $exists = $builder
-            ->where('name', 'Kantor Pusat')
-            ->countAllResults() > 0;
+        $existingNames = array_column(
+            $builder->select('name')->get()->getResultArray(),
+            'name'
+        );
 
-        if ($exists) {
-            return;
+        foreach ($locations as $location) {
+            if (in_array($location['name'], $existingNames, true)) {
+                continue;
+            }
+
+            $builder->insert([
+                ...$location,
+                'is_active'  => true,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
         }
-
-        $builder->insert([
-            'name'        => 'Kantor Pusat',
-            'building'    => 'Gedung A',
-            'floor'       => 'Lantai 1',
-            'room'        => 'A-101',
-            'description' => 'Lokasi utama kantor pusat.',
-            'is_active'   => true,
-            'created_at'  => date('Y-m-d H:i:s'),
-            'updated_at'  => date('Y-m-d H:i:s'),
-        ]);
     }
 
     private function seedCategories()
@@ -212,6 +228,10 @@ class DatabaseSeeder extends Seeder
             [
                 'name'        => 'Keamanan',
                 'description' => 'Perangkat keamanan seperti CCTV.',
+            ],
+            [
+                'name'        => 'Peralatan IT & Jaringan',
+                'description' => 'Perangkat jaringan seperti switch, router, kabel, dan aksesori IT.',
             ],
         ];
 

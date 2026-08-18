@@ -11,6 +11,10 @@ class Auth extends BaseController
 {
     public function login()
     {
+        if (!is_app_installed()) {
+            return redirect()->to('/setup');
+        }
+
         return view('auth/login');
     }
 

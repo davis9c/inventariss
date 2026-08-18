@@ -13,6 +13,12 @@ class InventoryTransactionModel extends Model
         'transaction_code',
         'transaction_date',
         'transaction_type',
+        'outbound_type',
+        'recipient_name',
+        'destination_unit',
+        'document_number',
+        'handed_over_by',
+        'received_by',
         'item_type',
         'asset_id',
         'stock_item_id',
@@ -27,6 +33,7 @@ class InventoryTransactionModel extends Model
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 
     public function generateCode(): string
     {

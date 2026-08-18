@@ -92,5 +92,7 @@ class Autoload extends AutoloadConfig
         'auth',
         'permission',
         'location',
+        'option',
+        'setup',
     ];
 }

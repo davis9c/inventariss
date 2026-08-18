@@ -18,6 +18,7 @@
                 class="btn btn-secondary">
                 Kembali
             </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#evidenceModal">Tambah Bukti</button>
         </div>
 
     </div>
@@ -137,6 +138,9 @@
                                 <?= esc($transaction['reason'] ?? '-') ?>
                             </td>
                         </tr>
+                        <tr><th>Jenis/Tujuan</th><td><?= esc(($transaction['outbound_type'] ?? '-') . ' / ' . ($transaction['recipient_name'] ?? '-')) ?></td></tr>
+                        <tr><th>Unit & Dokumen</th><td><?= esc(($transaction['destination_unit'] ?? '-') . ' / ' . ($transaction['document_number'] ?? '-')) ?></td></tr>
+                        <tr><th>Serah Terima</th><td><?= esc(($transaction['handed_over_by'] ?? '-') . ' / ' . ($transaction['received_by'] ?? '-')) ?></td></tr>
 
                         <tr>
                             <th>Catatan</th>
@@ -170,5 +174,7 @@
     </div>
 
 </div>
+
+<div class="modal fade" id="evidenceModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/evidence/' . $transaction['id']) ?>"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Bukti</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label class="form-label">Jenis Bukti</label><select name="evidence_type" class="form-select mb-3"><option>Foto</option><option>Dokumen</option></select><label class="form-label">File (PDF/JPG/PNG/WebP, max 10 MB)</label><input name="file" type="file" accept=".pdf,image/jpeg,image/png,image/webp" capture="environment" class="form-control mb-3" required><label class="form-label">Keterangan</label><textarea name="notes" class="form-control"></textarea></div><div class="modal-footer"><button class="btn btn-primary">Upload Bukti</button></div></form></div></div>
 
 <?= view('layout/footer') ?>

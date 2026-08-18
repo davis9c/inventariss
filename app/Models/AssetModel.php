@@ -20,10 +20,17 @@ class AssetModel extends Model
         'serial_number',
         'acquisition_year',
         'acquisition_price',
+        'acquisition_source',
+        'acquisition_date',
+        'acquisition_document_number',
+        'supplier_name',
+        'funding_source',
+        'acquisition_notes',
         'condition_status',
         'asset_status',
         'description',
     ];
 
     protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
 }

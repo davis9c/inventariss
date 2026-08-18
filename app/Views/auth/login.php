@@ -20,6 +20,12 @@
                     <h4 class="mb-1">Login</h4>
                     <p class="text-muted mb-4">Sistem Inventaris</p>
 
+                    <?php if (session()->getFlashdata('success')): ?>
+                        <div class="alert alert-success">
+                            <?= session()->getFlashdata('success') ?>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if (session()->getFlashdata('error')): ?>
                         <div class="alert alert-danger">
                             <?= session()->getFlashdata('error') ?>

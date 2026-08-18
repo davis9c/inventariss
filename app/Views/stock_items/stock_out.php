@@ -32,6 +32,13 @@
 
                 <div class="row">
 
+                    <div class="col-md-4 mb-3"><label class="form-label">Jenis Pengeluaran</label><select name="outbound_type" class="form-select" required><option value="">-- Pilih --</option><?php foreach (['Pemindahan','Peminjaman','Hibah','Penjualan','Penghapusan','Retur','Lainnya'] as $type): ?><option value="<?= esc($type) ?>"><?= esc($type) ?></option><?php endforeach; ?></select></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tujuan/Penerima</label><input name="recipient_name" class="form-control" required></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Unit/Departemen Tujuan</label><input name="destination_unit" class="form-control"></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Nomor Dokumen</label><input name="document_number" class="form-control"></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Pihak Menyerahkan</label><input name="handed_over_by" class="form-control"></div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Pihak Menerima</label><input name="received_by" class="form-control"></div>
+
                     <!-- Jumlah -->
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Jumlah Keluar</label>
