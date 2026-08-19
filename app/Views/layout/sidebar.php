@@ -133,10 +133,12 @@
 
         <hr>
 
-        <a href="<?= base_url('logout') ?>"
-            class="btn btn-outline-light btn-sm w-100">
-            Logout
-        </a>
+        <form method="post" action="<?= base_url('logout') ?>" class="w-100">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-outline-light btn-sm w-100">
+                Logout
+            </button>
+        </form>
 
     </div>
 

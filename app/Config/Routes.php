@@ -24,7 +24,7 @@ $routes->post('setup', 'Setup::create');
 
 $routes->get('login', 'Auth::login');
 $routes->post('login', 'Auth::attempt');
-$routes->get('logout', 'Auth::logout');
+$routes->post('logout', 'Auth::logout');
 
 
 /*
@@ -146,7 +146,6 @@ $routes->group(
     static function ($routes) {
 
         $routes->get('/', 'AssetMutation::index');
-        $routes->get('create', 'AssetMutation::create');
         $routes->post('store', 'AssetMutation::store');
         $routes->get(
             'units-by-location/(:num)',

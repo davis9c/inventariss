@@ -3,6 +3,11 @@
 
     var baseUrl = window.inventarisBaseUrl || '';
 
+    function csrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
     function escapeHtml(value) {
         if (value === null || value === undefined) return '';
         return String(value)
@@ -102,7 +107,10 @@
             fetch(opts.url || form.action, {
                 method: opts.method || (form.method || 'POST').toUpperCase(),
                 body: fd,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken()
+                },
                 credentials: 'same-origin'
             })
                 .then(function (res) {
@@ -147,7 +155,13 @@
         if (method === 'GET' && params) {
             url += (url.indexOf('?') === -1 ? '?' : '&') + new URLSearchParams(params);
         }
-        var init = { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' };
+        var init = {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken()
+            },
+            credentials: 'same-origin'
+        };
         if (method === 'POST') {
             init.method = 'POST';
             init.body = params instanceof FormData ? params : new URLSearchParams(params || {});

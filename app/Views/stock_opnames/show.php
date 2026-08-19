@@ -367,21 +367,50 @@
 
     setStatus(status);
 
+    var btnFinishOpname = document.getElementById('btnFinishOpname');
+
+    if (btnFinishOpname) {
+        btnFinishOpname.addEventListener('click', function () {
+            Inventaris.confirm({
+                title: 'Selesaikan Opname',
+                message: 'Selesaikan stock opname <?= esc($opname['opname_code']) ?>? Data pemeriksaan tidak dapat diubah setelah diselesaikan.',
+                onConfirm: function () {
+                    Inventaris.fetchJson('<?= base_url('stock-opnames/' . $opname['id'] . '/finish') ?>', {}, 'POST')
+                        .then(function (json) {
+                            if (json.success) {
+                                Inventaris.toast(json.message);
+                                setStatus(json.data.status);
+                            } else {
+                                Inventaris.toast(json.message, 'danger');
+                            }
+                        })
+                        .catch(function () {
+                            Inventaris.toast('Koneksi gagal. Silakan coba lagi.', 'danger');
+                        });
+                }
+            });
+        });
+    }
+
     var checkAssetForm = document.getElementById('checkAssetForm');
     var checkStockForm = document.getElementById('checkStockForm');
+    var tabelAssetCheck = document.getElementById('tabel-asset-check');
+    var tabelStockCheck = document.getElementById('tabel-stock-check');
 
-    document.getElementById('tabel-asset-check').addEventListener('click', function (e) {
-        var btn = e.target.closest('.btn-check-asset');
-        if (!btn) return;
-        var id = btn.getAttribute('data-id');
-        checkAssetForm.action = Inventaris.baseUrl + 'stock-opnames/detail/' + id + '/update';
-        document.getElementById('checkAssetInfo').innerHTML = '<strong>' + Inventaris.esc(btn.getAttribute('data-name')) + '</strong>';
-        checkAssetForm.elements['is_found'].value = btn.getAttribute('data-found');
-        checkAssetForm.elements['condition_status'].value = btn.getAttribute('data-condition');
-        checkAssetForm.elements['notes'].value = btn.getAttribute('data-notes');
-        checkAssetForm.setAttribute('data-detail-id', id);
-        Inventaris.openModal('checkAssetModal');
-    });
+    if (tabelAssetCheck) {
+        tabelAssetCheck.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-check-asset');
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            checkAssetForm.action = Inventaris.baseUrl + 'stock-opnames/detail/' + id + '/update';
+            document.getElementById('checkAssetInfo').innerHTML = '<strong>' + Inventaris.esc(btn.getAttribute('data-name')) + '</strong>';
+            checkAssetForm.elements['is_found'].value = btn.getAttribute('data-found');
+            checkAssetForm.elements['condition_status'].value = btn.getAttribute('data-condition');
+            checkAssetForm.elements['notes'].value = btn.getAttribute('data-notes');
+            checkAssetForm.setAttribute('data-detail-id', id);
+            Inventaris.openModal('checkAssetModal');
+        });
+    }
 
     checkAssetForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -396,19 +425,21 @@
         });
     });
 
-    document.getElementById('tabel-stock-check').addEventListener('click', function (e) {
-        var btn = e.target.closest('.btn-check-stock');
-        if (!btn) return;
-        var id = btn.getAttribute('data-id');
-        checkStockForm.action = Inventaris.baseUrl + 'stock-opnames/stock-detail/' + id + '/update';
-        document.getElementById('checkStockInfo').innerHTML =
-            '<strong>' + Inventaris.esc(btn.getAttribute('data-name')) + '</strong><br>' +
-            '<small class="text-muted">Stok sistem: ' + Inventaris.esc(btn.getAttribute('data-system')) + '</small>';
-        checkStockForm.elements['physical_qty'].value = btn.getAttribute('data-physical');
-        checkStockForm.elements['notes'].value = btn.getAttribute('data-notes');
-        checkStockForm.setAttribute('data-detail-id', id);
-        Inventaris.openModal('checkStockModal');
-    });
+    if (tabelStockCheck) {
+        tabelStockCheck.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-check-stock');
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            checkStockForm.action = Inventaris.baseUrl + 'stock-opnames/stock-detail/' + id + '/update';
+            document.getElementById('checkStockInfo').innerHTML =
+                '<strong>' + Inventaris.esc(btn.getAttribute('data-name')) + '</strong><br>' +
+                '<small class="text-muted">Stok sistem: ' + Inventaris.esc(btn.getAttribute('data-system')) + '</small>';
+            checkStockForm.elements['physical_qty'].value = btn.getAttribute('data-physical');
+            checkStockForm.elements['notes'].value = btn.getAttribute('data-notes');
+            checkStockForm.setAttribute('data-detail-id', id);
+            Inventaris.openModal('checkStockModal');
+        });
+    }
 
     checkStockForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -419,27 +450,6 @@
                 document.getElementById('physical-' + id).textContent = json.data.physical_qty;
                 document.getElementById('diff-' + id).innerHTML = diffBadge(json.data.diff);
                 document.getElementById('stock-note-' + id).textContent = json.data.notes || '';
-            }
-        });
-    });
-
-    document.getElementById('btnFinishOpname').addEventListener('click', function () {
-        Inventaris.confirm({
-            title: 'Selesaikan Opname',
-            message: 'Selesaikan stock opname <?= esc($opname['opname_code']) ?>? Data pemeriksaan tidak dapat diubah setelah diselesaikan.',
-            onConfirm: function () {
-                Inventaris.fetchJson('<?= base_url('stock-opnames/' . $opname['id'] . '/finish') ?>', {}, 'POST')
-                    .then(function (json) {
-                        if (json.success) {
-                            Inventaris.toast(json.message);
-                            setStatus(json.data.status);
-                        } else {
-                            Inventaris.toast(json.message, 'danger');
-                        }
-                    })
-                    .catch(function () {
-                        Inventaris.toast('Koneksi gagal. Silakan coba lagi.', 'danger');
-                    });
             }
         });
     });

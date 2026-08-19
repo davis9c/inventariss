@@ -7,6 +7,8 @@
 
     <title><?= $title ?? 'Inventaris' ?></title>
 
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+
     <?php
         $assetVer = max(
             filemtime(FCPATH . 'js/inventaris.js') ?: 0,
