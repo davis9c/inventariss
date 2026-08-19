@@ -40,6 +40,8 @@ class AssetMutation extends BaseController
                         assets.name as asset_name,
                         fl.name as from_location_name,
                         tl.name as to_location_name,
+                        fu.name as from_unit_name,
+                        tu.name as to_unit_name,
                         users.name as created_by_name
                     ')
                         ->join(
@@ -54,6 +56,16 @@ class AssetMutation extends BaseController
                         ->join(
                             'locations tl',
                             'tl.id = inventory_transactions.to_location_id',
+                            'left'
+                        )
+                        ->join(
+                            'units fu',
+                            'fu.id = inventory_transactions.from_unit_id',
+                            'left'
+                        )
+                        ->join(
+                            'units tu',
+                            'tu.id = inventory_transactions.to_unit_id',
                             'left'
                         )
                         ->join(
@@ -85,6 +97,8 @@ class AssetMutation extends BaseController
                     'assets.name',
                     'fl.name',
                     'tl.name',
+                    'fu.name',
+                    'tu.name',
                     'inventory_transactions.reason',
                     'inventory_transactions.notes',
                     'users.name',
@@ -191,6 +205,8 @@ class AssetMutation extends BaseController
                 inventory_transactions.*,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
                 ->join(
@@ -201,6 +217,16 @@ class AssetMutation extends BaseController
                 ->join(
                     'locations tl',
                     'tl.id = inventory_transactions.to_location_id',
+                    'left'
+                )
+                ->join(
+                    'units fu',
+                    'fu.id = inventory_transactions.from_unit_id',
+                    'left'
+                )
+                ->join(
+                    'units tu',
+                    'tu.id = inventory_transactions.to_unit_id',
                     'left'
                 )
                 ->join(
@@ -325,6 +351,21 @@ class AssetMutation extends BaseController
                 );
         }
 
+        $toUnitId = (int) $this->request->getPost('to_unit_id');
+
+        if (!$toUnitId) {
+            if ($isAjax) {
+                return $this->respondErrors('Unit tujuan wajib dipilih.', ['to_unit_id' => 'Unit tujuan wajib dipilih.']);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with(
+                    'errors',
+                    ['to_unit_id' => 'Unit tujuan wajib dipilih.']
+                );
+        }
+
         /*
     |--------------------------------------------------------------------------
     | Transaksi database
@@ -345,6 +386,8 @@ class AssetMutation extends BaseController
             'quantity'         => 1,
             'from_location_id' => $asset['location_id'],
             'to_location_id'   => $toLocationId,
+            'from_unit_id'     => $asset['unit_id'],
+            'to_unit_id'       => $toUnitId,
             'reason'           => $this->request->getPost('reason'),
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
@@ -354,7 +397,7 @@ class AssetMutation extends BaseController
 
         // Update posisi barang
         $this->assetModel->update($assetId, [
-            'unit_id'     => $this->request->getPost('to_unit_id'),
+            'unit_id'     => $toUnitId,
             'location_id' => $toLocationId,
         ]);
 
@@ -372,7 +415,7 @@ class AssetMutation extends BaseController
 
         if ($isAjax) {
             return $this->respondSuccess('Mutasi aset berhasil disimpan.', [
-                'unit_id'     => $this->request->getPost('to_unit_id'),
+                'unit_id'     => $toUnitId,
                 'location_id' => $toLocationId,
                 'transaction' => $this->transactionRow($transactionId),
             ]);
@@ -395,6 +438,8 @@ class AssetMutation extends BaseController
                 assets.name as asset_name,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -409,6 +454,16 @@ class AssetMutation extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(

@@ -16,7 +16,8 @@
             </div>
 
             <p class="text-muted">
-                Seluruh stok barang ini akan dipindahkan ke lokasi tujuan.
+                Seluruh stok barang ini akan dipindahkan ke unit/lokasi tujuan.
+                Lokasi boleh dibiarkan sama bila hanya pindah unit.
             </p>
 
             <form method="post"
@@ -41,23 +42,46 @@
                         <label class="form-label">Lokasi Tujuan</label>
 
                         <select name="to_location_id"
-                            class="form-select <?= isset($errors['to_location_id']) ? 'is-invalid' : '' ?>"
-                            required>
+                            id="transferToLocation"
+                            class="form-select <?= isset($errors['to_location_id']) ? 'is-invalid' : '' ?>">
 
-                            <option value="">-- Pilih Lokasi --</option>
+                            <option value="">-- Tetap di Lokasi Saat Ini --</option>
 
                             <?php foreach ($locations as $location): ?>
                                 <option value="<?= $location['id'] ?>"
-                                    <?= (string) old('to_location_id') === (string) $location['id'] ? 'selected' : '' ?>>
-                                    <?= esc($location['name']) ?>
+                                    <?= (string) old('to_location_id', (string) $item['location_id']) === (string) $location['id'] ? 'selected' : '' ?>>
+                                    <?= esc($location['name']) ?><?= $location['id'] == $item['location_id'] ? ' (saat ini)' : '' ?>
                                 </option>
                             <?php endforeach; ?>
 
                         </select>
 
+                        <div class="form-text">Kosongkan bila hanya pindah unit dalam lokasi yang sama.</div>
+
                         <?php if (isset($errors['to_location_id'])): ?>
                             <div class="invalid-feedback">
                                 <?= esc($errors['to_location_id']) ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Unit tujuan -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Unit Tujuan</label>
+
+                        <select name="to_unit_id"
+                            id="transferToUnit"
+                            class="form-select <?= isset($errors['to_unit_id']) ? 'is-invalid' : '' ?>"
+                            required
+                            disabled>
+
+                            <option value="">-- Pilih Unit --</option>
+
+                        </select>
+
+                        <?php if (isset($errors['to_unit_id'])): ?>
+                            <div class="invalid-feedback">
+                                <?= esc($errors['to_unit_id']) ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -87,7 +111,7 @@
                             name="reason"
                             class="form-control"
                             value="<?= esc(old('reason')) ?>"
-                            placeholder="Contoh: Pindah gudang">
+                            placeholder="Contoh: Pindah gudang, reorganisasi unit">
 
                         <?php if (isset($errors['reason'])): ?>
                             <div class="invalid-feedback">
@@ -124,4 +148,38 @@
 
 </div>
 
+<script>
+(function () {
+    'use strict';
+
+    var currentLocationId = <?= (int) $item['location_id'] ?>;
+    var currentUnitId = <?= (int) $item['unit_id'] ?>;
+    var transferToLocation = document.getElementById('transferToLocation');
+    var transferToUnit = document.getElementById('transferToUnit');
+
+    function loadTransferUnits(locationId) {
+        transferToUnit.disabled = !locationId;
+        transferToUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
+        if (!locationId) return;
+        Inventaris.fetchJson(Inventaris.baseUrl + 'stock-items/units-by-location/' + locationId)
+            .then(function (units) {
+                units.forEach(function (u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name + (u.id === currentUnitId ? ' (saat ini)' : '');
+                    transferToUnit.appendChild(opt);
+                });
+            })
+            .catch(function () {
+                Inventaris.toast('Gagal memuat daftar unit.', 'danger');
+            });
+    }
+
+    transferToLocation.addEventListener('change', function () {
+        loadTransferUnits(this.value || currentLocationId);
+    });
+
+    loadTransferUnits(transferToLocation.value || currentLocationId);
+})();
+</script>
 <?= view('layout/footer') ?>

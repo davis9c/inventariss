@@ -25,6 +25,8 @@ class InventoryTransactionModel extends Model
         'quantity',
         'from_location_id',
         'to_location_id',
+        'from_unit_id',
+        'to_unit_id',
         'reference_type',
         'reference_id',
         'reason',

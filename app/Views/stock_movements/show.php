@@ -126,9 +126,23 @@
                         </tr>
 
                         <tr>
+                            <th>Unit Asal</th>
+                            <td>
+                                <?= esc($transaction['from_unit_name'] ?? '-') ?>
+                            </td>
+                        </tr>
+
+                        <tr>
                             <th>Lokasi Tujuan</th>
                             <td>
                                 <?= esc($transaction['to_location_name'] ?? '-') ?>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Unit Tujuan</th>
+                            <td>
+                                <?= esc($transaction['to_unit_name'] ?? '-') ?>
                             </td>
                         </tr>
 

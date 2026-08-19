@@ -526,6 +526,8 @@ class Asset extends BaseController
                 inventory_transactions.*,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -536,6 +538,16 @@ class Asset extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(
@@ -701,6 +713,7 @@ class Asset extends BaseController
             'asset_id'         => $id,
             'quantity'         => 1,
             'from_location_id' => $asset['location_id'],
+            'from_unit_id'     => $asset['unit_id'],
             'reason'           => $this->request->getPost('reason'),
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
@@ -826,6 +839,7 @@ class Asset extends BaseController
             'asset_id'         => $id,
             'quantity'         => 1,
             'to_location_id'   => $asset['location_id'],
+            'to_unit_id'       => $asset['unit_id'],
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
         ]);
@@ -871,6 +885,8 @@ class Asset extends BaseController
                 inventory_transactions.*,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -881,6 +897,16 @@ class Asset extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(

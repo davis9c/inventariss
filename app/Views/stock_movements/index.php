@@ -120,7 +120,9 @@
                             <th>Barang</th>
                             <th>Qty</th>
                             <th>Lokasi Asal</th>
+                            <th>Unit Asal</th>
                             <th>Lokasi Tujuan</th>
+                            <th>Unit Tujuan</th>
                             <th>User</th>
                             <th>Keterangan</th>
                             <th></th>
@@ -185,7 +187,9 @@
                 }
             },
             { data: 'from_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'from_unit_name', render: function (data) { return Inventaris.esc(data || '-'); } },
             { data: 'to_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: 'to_unit_name', render: function (data) { return Inventaris.esc(data || '-'); } },
             { data: 'created_by_name', render: function (data) { return Inventaris.esc(data || '-'); } },
             {
                 data: null,

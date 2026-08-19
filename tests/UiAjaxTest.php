@@ -261,6 +261,8 @@ final class UiAjaxTest extends CIUnitTestCase
                 'location_id'      => $this->ids['locations'][0],
                 'condition_status' => 'Baik',
                 'asset_status'     => 'Aktif',
+                'acquisition_source' => 'Pembelian',
+                'acquisition_date' => date('Y-m-d'),
             ]);
 
         $json = $this->json($result);
@@ -457,7 +459,9 @@ final class UiAjaxTest extends CIUnitTestCase
         $json = $this->json($result);
         $this->assertTrue($json['success']);
 
-        $this->assertNull(db_connect()->table('assets')->where('id', $this->ids['assets'][1])->get()->getRow());
+        $row = db_connect()->table('assets')->where('id', $this->ids['assets'][1])->get()->getRow();
+        $this->assertNotNull($row);
+        $this->assertNotNull($row->deleted_at);
     }
 
     public function testAssetMutationAjaxSuccess(): void
@@ -485,6 +489,8 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/assets/asset-out/' . $this->ids['assets'][0], [
                 'transaction_date' => date('Y-m-d'),
+                'outbound_type'    => 'Pemindahan',
+                'recipient_name'   => 'TEST PENERIMA',
                 'reason'           => 'TEST keluar',
             ]);
 
@@ -566,6 +572,8 @@ final class UiAjaxTest extends CIUnitTestCase
             ->post('/stock-items/stock-out/' . $this->ids['stock_items'][0], [
                 'quantity'         => 999,
                 'transaction_date' => date('Y-m-d'),
+                'outbound_type'    => 'Pemindahan',
+                'recipient_name'   => 'TEST PENERIMA',
             ]);
 
         $this->assertStatus($result, 409);
@@ -584,6 +592,8 @@ final class UiAjaxTest extends CIUnitTestCase
             ->post('/stock-items/stock-out/' . $this->ids['stock_items'][0], [
                 'quantity'         => 2,
                 'transaction_date' => date('Y-m-d'),
+                'outbound_type'    => 'Pemindahan',
+                'recipient_name'   => 'TEST PENERIMA',
             ]);
 
         $json = $this->json($result);
@@ -594,9 +604,23 @@ final class UiAjaxTest extends CIUnitTestCase
 
     public function testTransferAjaxSuccess(): void
     {
+        $this->insert('units', [
+            'name'      => 'TEST-UNIT-2',
+            'code'      => 'TEST-UNIT-2-' . uniqid(),
+            'is_active' => 1,
+        ]);
+
+        $unit2 = $this->ids['units'][1];
+
+        db_connect()->table('unit_locations')->insert([
+            'unit_id'     => $unit2,
+            'location_id' => $this->ids['locations'][1],
+        ]);
+
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/stock-items/transfer/' . $this->ids['stock_items'][0], [
                 'to_location_id'   => $this->ids['locations'][1],
+                'to_unit_id'       => $unit2,
                 'transaction_date' => date('Y-m-d'),
                 'reason'           => 'TEST pindah',
             ]);
@@ -604,10 +628,21 @@ final class UiAjaxTest extends CIUnitTestCase
         $json = $this->json($result);
         $this->assertTrue($json['success']);
         $this->assertSame((string) $this->ids['locations'][1], (string) $json['data']['location_id']);
+        $this->assertSame((string) $unit2, (string) $json['data']['unit_id']);
         $this->assertSame('Pindah', $json['data']['transaction']['transaction_type']);
 
         $row = db_connect()->table('stock_items')->where('id', $this->ids['stock_items'][0])->get()->getRowArray();
         $this->assertSame((string) $this->ids['locations'][1], (string) $row['location_id']);
+        $this->assertSame((string) $unit2, (string) $row['unit_id']);
+
+        $tx = db_connect()->table('inventory_transactions')
+            ->where('stock_item_id', $this->ids['stock_items'][0])
+            ->where('transaction_type', 'Pindah')
+            ->orderBy('id', 'DESC')
+            ->get()
+            ->getRowArray();
+        $this->assertSame((string) $this->ids['units'][0], (string) $tx['from_unit_id']);
+        $this->assertSame((string) $unit2, (string) $tx['to_unit_id']);
     }
 
     public function testAdjustmentDownAjaxSuccess(): void

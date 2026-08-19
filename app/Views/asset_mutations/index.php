@@ -146,8 +146,8 @@
                         '<small class="text-muted">' + Inventaris.esc(row.asset_code) + '</small>';
                 }
             },
-            { data: 'from_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
-            { data: 'to_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.from_location_name || '-') + ' — ' + Inventaris.esc(row.from_unit_name || '-'); } },
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.to_location_name || '-') + ' — ' + Inventaris.esc(row.to_unit_name || '-'); } },
             { data: 'reason', render: function (data) { return Inventaris.esc(data || '-'); } }
         ]
     });

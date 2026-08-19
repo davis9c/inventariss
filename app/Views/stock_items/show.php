@@ -44,7 +44,7 @@
                     class="btn btn-primary"
                     data-bs-toggle="modal"
                     data-bs-target="#transferModal">
-                Pindah Lokasi
+                Pindah Stok
             </button>
 
             <button type="button"
@@ -364,20 +364,27 @@
         <div class="modal-content">
             <form id="transferForm" method="post" action="<?= base_url('stock-items/transfer/' . $item['id']) ?>">
                 <div class="modal-header">
-                    <h5 class="modal-title">Pindah Lokasi</h5>
+                    <h5 class="modal-title">Pindah Stok</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info py-2 mb-3">
-                        Seluruh stok (<?= esc($item['quantity']) ?> <?= esc($item['satuan']) ?>) akan dipindahkan ke lokasi tujuan.
+                        Seluruh stok (<?= esc($item['quantity']) ?> <?= esc($item['satuan']) ?>) akan dipindahkan ke unit/lokasi tujuan.
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Lokasi Tujuan</label>
-                        <select name="to_location_id" class="form-select" required>
-                            <option value="">-- Pilih Lokasi --</option>
+                        <select name="to_location_id" id="transferToLocation" class="form-select">
+                            <option value="">-- Tetap di Lokasi Saat Ini --</option>
                             <?php foreach ($locations as $location): ?>
                                 <option value="<?= $location['id'] ?>"><?= esc($location['name']) ?></option>
                             <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">Kosongkan bila hanya pindah unit dalam lokasi yang sama.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Tujuan</label>
+                        <select name="to_unit_id" id="transferToUnit" class="form-select" required disabled>
+                            <option value="">-- Pilih Unit --</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -453,6 +460,7 @@
     var history = <?= json_encode($history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     var satuan = <?= json_encode($item['satuan']) ?>;
     var locationsMap = <?= json_encode(array_column($locations, 'name', 'id'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var unitsMap = <?= json_encode(array_column($units, 'name', 'id'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     var inTypes = ['Masuk', 'Penyesuaian Naik'];
     var outTypes = ['Keluar', 'Penyesuaian Turun'];
 
@@ -474,12 +482,13 @@
 
     function locationHtml(row) {
         if (row.transaction_type === 'Pindah') {
-            return Inventaris.esc(row.from_location_name || '-') + ' &rarr; ' + Inventaris.esc(row.to_location_name || '-');
+            return Inventaris.esc(row.from_location_name || '-') + ' (' + Inventaris.esc(row.from_unit_name || '-') + ') &rarr; ' +
+                Inventaris.esc(row.to_location_name || '-') + ' (' + Inventaris.esc(row.to_unit_name || '-') + ')';
         }
         if (inTypes.indexOf(row.transaction_type) !== -1) {
-            return Inventaris.esc(row.to_location_name || '-');
+            return Inventaris.esc(row.to_location_name || '-') + ' (' + Inventaris.esc(row.to_unit_name || '-') + ')';
         }
-        return Inventaris.esc(row.from_location_name || '-');
+        return Inventaris.esc(row.from_location_name || '-') + ' (' + Inventaris.esc(row.from_unit_name || '-') + ')';
     }
 
     var dt = Inventaris.datatable('#tabel-riwayat', {
@@ -520,6 +529,8 @@
             balance: json.data.quantity,
             from_location_name: json.data.transaction.from_location_name,
             to_location_name: json.data.transaction.to_location_name,
+            from_unit_name: json.data.transaction.from_unit_name,
+            to_unit_name: json.data.transaction.to_unit_name,
             reason: json.data.transaction.reason,
             notes: json.data.transaction.notes,
             created_by_name: json.data.transaction.created_by_name
@@ -557,6 +568,8 @@
                 Inventaris.hideModal('transferModal');
                 e.target.reset();
                 document.getElementById('stock-location').textContent = locationsMap[json.data.location_id] || '-';
+                transferToUnit.disabled = true;
+                transferToUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
                 dt.row.add({
                     id: json.data.transaction.id,
                     transaction_code: json.data.transaction.transaction_code,
@@ -566,12 +579,44 @@
                     balance: json.data.transaction.quantity,
                     from_location_name: json.data.transaction.from_location_name,
                     to_location_name: json.data.transaction.to_location_name,
+                    from_unit_name: json.data.transaction.from_unit_name,
+                    to_unit_name: json.data.transaction.to_unit_name,
                     reason: json.data.transaction.reason,
                     notes: json.data.transaction.notes,
                     created_by_name: json.data.transaction.created_by_name
                 }).draw();
             }
         });
+    });
+
+    var transferToLocation = document.getElementById('transferToLocation');
+    var transferToUnit = document.getElementById('transferToUnit');
+    var currentLocationId = <?= (int) $item['location_id'] ?>;
+
+    function loadTransferUnits(locationId) {
+        transferToUnit.disabled = !locationId;
+        transferToUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
+        if (!locationId) return;
+        Inventaris.fetchJson(Inventaris.baseUrl + 'stock-items/units-by-location/' + locationId)
+            .then(function (units) {
+                units.forEach(function (u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name + (u.id === <?= (int) $item['unit_id'] ?> ? ' (saat ini)' : '');
+                    transferToUnit.appendChild(opt);
+                });
+            })
+            .catch(function () {
+                Inventaris.toast('Gagal memuat daftar unit.', 'danger');
+            });
+    }
+
+    transferToLocation.addEventListener('change', function () {
+        loadTransferUnits(this.value || currentLocationId);
+    });
+
+    document.getElementById('transferModal').addEventListener('show.bs.modal', function () {
+        loadTransferUnits(transferToLocation.value || currentLocationId);
     });
 
     document.getElementById('adjustmentForm').addEventListener('submit', function (e) {

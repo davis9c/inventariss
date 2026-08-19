@@ -393,6 +393,8 @@ class StockItem extends BaseController
                 inventory_transactions.*,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -403,6 +405,16 @@ class StockItem extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(
@@ -540,6 +552,7 @@ class StockItem extends BaseController
             'stock_item_id'    => $id,
             'quantity'         => $quantity,
             'to_location_id'   => $item['location_id'],
+            'to_unit_id'       => $item['unit_id'],
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
         ]);
@@ -689,6 +702,7 @@ class StockItem extends BaseController
             'stock_item_id'    => $id,
             'quantity'         => $quantity,
             'from_location_id' => $item['location_id'],
+            'from_unit_id'     => $item['unit_id'],
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
         ]);
@@ -741,8 +755,7 @@ class StockItem extends BaseController
         }
 
         $locationBuilder = $this->locationModel
-            ->where('is_active', 1)
-            ->where('id !=', $item['location_id']);
+            ->where('is_active', 1);
 
         if (has_location_restriction()) {
             $locationBuilder->whereIn(
@@ -788,10 +801,15 @@ class StockItem extends BaseController
         }
 
         $toLocationId = (int) $this->request->getPost('to_location_id');
+        $toUnitId     = (int) $this->request->getPost('to_unit_id');
 
         if (!$toLocationId) {
+            $toLocationId = (int) $item['location_id'];
+        }
+
+        if (!$toUnitId) {
             if ($isAjax) {
-                return $this->respondErrors('Lokasi tujuan wajib dipilih.', ['to_location_id' => 'Lokasi tujuan wajib dipilih.']);
+                return $this->respondErrors('Unit tujuan wajib dipilih.', ['to_unit_id' => 'Unit tujuan wajib dipilih.']);
             }
 
             return redirect()
@@ -799,21 +817,7 @@ class StockItem extends BaseController
                 ->withInput()
                 ->with(
                     'errors',
-                    ['to_location_id' => 'Lokasi tujuan wajib dipilih.']
-                );
-        }
-
-        if ($toLocationId === (int) $item['location_id']) {
-            if ($isAjax) {
-                return $this->respondError('Lokasi tujuan tidak boleh sama dengan lokasi asal.', 422);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'Lokasi tujuan tidak boleh sama dengan lokasi asal.'
+                    ['to_unit_id' => 'Unit tujuan wajib dipilih.']
                 );
         }
 
@@ -828,6 +832,20 @@ class StockItem extends BaseController
                 ->with(
                     'error',
                     'Anda tidak memiliki akses ke lokasi tujuan.'
+                );
+        }
+
+        if ($toLocationId === (int) $item['location_id'] && $toUnitId === (int) $item['unit_id']) {
+            if ($isAjax) {
+                return $this->respondError('Tidak ada perubahan lokasi maupun unit.', 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Tidak ada perubahan lokasi maupun unit.'
                 );
         }
 
@@ -850,9 +868,10 @@ class StockItem extends BaseController
 
         $db->transStart();
 
-        // Pindahkan seluruh stok ke lokasi tujuan
+        // Pindahkan seluruh stok ke lokasi & unit tujuan
         $this->itemModel->update($id, [
             'location_id' => $toLocationId,
+            'unit_id'     => $toUnitId,
         ]);
 
         $this->transactionModel->insert([
@@ -864,6 +883,8 @@ class StockItem extends BaseController
             'quantity'         => $item['quantity'],
             'from_location_id' => $item['location_id'],
             'to_location_id'   => $toLocationId,
+            'from_unit_id'     => $item['unit_id'],
+            'to_unit_id'       => $toUnitId,
             'reason'           => $this->request->getPost('reason'),
             'notes'            => $this->request->getPost('notes'),
             'created_by'       => session()->get('user_id'),
@@ -885,15 +906,16 @@ class StockItem extends BaseController
         }
 
         if ($isAjax) {
-            return $this->respondSuccess('Stok berhasil dipindahkan ke lokasi tujuan.', [
+            return $this->respondSuccess('Stok berhasil dipindahkan ke lokasi & unit tujuan.', [
                 'location_id' => $toLocationId,
+                'unit_id'     => $toUnitId,
                 'transaction' => $this->transactionRow($transactionId),
             ]);
         }
 
         return redirect()
             ->to('/stock-items/' . $id)
-            ->with('success', 'Stok berhasil dipindahkan ke lokasi tujuan.');
+            ->with('success', 'Stok berhasil dipindahkan ke lokasi & unit tujuan.');
     }
 
     public function adjustment($id)
@@ -1021,6 +1043,8 @@ class StockItem extends BaseController
             'quantity'         => $quantity,
             'from_location_id' => $type === 'Penyesuaian Turun' ? $item['location_id'] : null,
             'to_location_id'   => $type === 'Penyesuaian Naik' ? $item['location_id'] : null,
+            'from_unit_id'     => $type === 'Penyesuaian Turun' ? $item['unit_id'] : null,
+            'to_unit_id'       => $type === 'Penyesuaian Naik' ? $item['unit_id'] : null,
             'reason'           => $this->request->getPost('reason'),
             'created_by'       => session()->get('user_id'),
         ]);
@@ -1062,6 +1086,8 @@ class StockItem extends BaseController
                 inventory_transactions.*,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -1075,12 +1101,52 @@ class StockItem extends BaseController
                 'left'
             )
             ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
+                'left'
+            )
+            ->join(
                 'users',
                 'users.id = inventory_transactions.created_by',
                 'left'
             )
             ->where('inventory_transactions.id', $transactionId)
             ->first();
+    }
+
+    public function unitsByLocation($locationId)
+    {
+        $db = db_connect();
+
+        $units = $db->table('unit_locations ul')
+            ->select('units.id, units.name, units.code')
+            ->join(
+                'units',
+                'units.id = ul.unit_id'
+            )
+            ->where(
+                'ul.location_id',
+                $locationId
+            )
+            ->where(
+                'units.is_active',
+                1
+            )
+            ->orderBy(
+                'units.name',
+                'ASC'
+            )
+            ->get()
+            ->getResultArray();
+
+        return $this->response
+            ->setContentType('application/json')
+            ->setJSON($units);
     }
 
     private function validationRules(?int $id = null): array

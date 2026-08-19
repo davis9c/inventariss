@@ -42,6 +42,8 @@ class InventoryTransaction extends BaseController
                         stock_items.satuan,
                         fl.name as from_location_name,
                         tl.name as to_location_name,
+                        fu.name as from_unit_name,
+                        tu.name as to_unit_name,
                         users.name as created_by_name
                     ')
                         ->join(
@@ -62,6 +64,16 @@ class InventoryTransaction extends BaseController
                         ->join(
                             'locations tl',
                             'tl.id = inventory_transactions.to_location_id',
+                            'left'
+                        )
+                        ->join(
+                            'units fu',
+                            'fu.id = inventory_transactions.from_unit_id',
+                            'left'
+                        )
+                        ->join(
+                            'units tu',
+                            'tu.id = inventory_transactions.to_unit_id',
                             'left'
                         )
                         ->join(
@@ -116,6 +128,8 @@ class InventoryTransaction extends BaseController
                     'stock_items.name',
                     'fl.name',
                     'tl.name',
+                    'fu.name',
+                    'tu.name',
                     'users.name',
                     'inventory_transactions.notes',
                     'inventory_transactions.reason',
@@ -127,8 +141,10 @@ class InventoryTransaction extends BaseController
                     3 => 'inventory_transactions.item_type',
                     5 => 'inventory_transactions.quantity',
                     6 => 'fl.name',
-                    7 => 'tl.name',
-                    8 => 'users.name',
+                    7 => 'fu.name',
+                    8 => 'tl.name',
+                    9 => 'tu.name',
+                    10 => 'users.name',
                 ],
                 'inventory_transactions.transaction_date',
                 'DESC'
@@ -145,6 +161,8 @@ class InventoryTransaction extends BaseController
                 stock_items.satuan,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -165,6 +183,16 @@ class InventoryTransaction extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(
@@ -248,6 +276,8 @@ class InventoryTransaction extends BaseController
                 stock_items.satuan,
                 fl.name as from_location_name,
                 tl.name as to_location_name,
+                fu.name as from_unit_name,
+                tu.name as to_unit_name,
                 users.name as created_by_name
             ')
             ->join(
@@ -268,6 +298,16 @@ class InventoryTransaction extends BaseController
             ->join(
                 'locations tl',
                 'tl.id = inventory_transactions.to_location_id',
+                'left'
+            )
+            ->join(
+                'units fu',
+                'fu.id = inventory_transactions.from_unit_id',
+                'left'
+            )
+            ->join(
+                'units tu',
+                'tu.id = inventory_transactions.to_unit_id',
                 'left'
             )
             ->join(

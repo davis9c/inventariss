@@ -227,8 +227,8 @@
                         <tr>
                             <th>Tanggal</th>
                             <th>Jenis</th>
-                            <th>Dari Lokasi</th>
-                            <th>Ke Lokasi</th>
+                            <th>Dari</th>
+                            <th>Ke</th>
                             <th>Keterangan</th>
                             <th>User</th>
                         </tr>
@@ -609,8 +609,8 @@
         columns: [
             { data: 'transaction_date' },
             { data: 'transaction_type', render: function (data) { return movementBadge(data); } },
-            { data: 'from_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
-            { data: 'to_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.from_location_name || '-') + ' — ' + Inventaris.esc(row.from_unit_name || '-'); } },
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.to_location_name || '-') + ' — ' + Inventaris.esc(row.to_unit_name || '-'); } },
             { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } },
             { data: 'created_by_name', render: function (data) { return Inventaris.esc(data || '-'); } }
         ]

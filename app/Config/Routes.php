@@ -180,6 +180,10 @@ $routes->group(
         $routes->post('transfer/(:num)', 'StockItem::storeTransfer/$1');
         $routes->get('adjustment/(:num)', 'StockItem::adjustment/$1');
         $routes->post('adjustment/(:num)', 'StockItem::storeAdjustment/$1');
+        $routes->get(
+            'units-by-location/(:num)',
+            'StockItem::unitsByLocation/$1'
+        );
         $routes->get('(:num)', 'StockItem::show/$1');
     }
 );
