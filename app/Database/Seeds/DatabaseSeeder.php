@@ -43,6 +43,10 @@ class DatabaseSeeder extends Seeder
                 'name'        => 'Auditor',
                 'description' => 'Melihat data dan audit log',
             ],
+            [
+                'name'        => 'Akun Dasar',
+                'description' => 'Akun tanpa akses ke modul apapun. Hubungi Administrator Inventaris untuk meminta akses.',
+            ],
         ];
 
         $builder = $this->db->table('roles');
@@ -66,24 +70,16 @@ class DatabaseSeeder extends Seeder
     {
         $permissions = [
             [
-                'name'        => 'maintenance.view',
-                'description' => 'Melihat data maintenance',
+                'name'        => 'category.manage',
+                'description' => 'Mengelola data kategori barang',
             ],
             [
-                'name'        => 'maintenance.create',
-                'description' => 'Membuat pengajuan maintenance',
+                'name'        => 'location.manage',
+                'description' => 'Mengelola data lokasi',
             ],
             [
-                'name'        => 'maintenance.update',
-                'description' => 'Mengubah data maintenance',
-            ],
-            [
-                'name'        => 'maintenance.delete',
-                'description' => 'Menghapus data maintenance',
-            ],
-            [
-                'name'        => 'maintenance.approve',
-                'description' => 'Menyetujui atau menolak maintenance',
+                'name'        => 'unit.manage',
+                'description' => 'Mengelola data unit/departemen',
             ],
         ];
 
@@ -129,26 +125,18 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        if (isset($roleIds['Teknisi'])) {
-            foreach (['maintenance.view', 'maintenance.create', 'maintenance.update'] as $permission) {
-                if (isset($permissionIds[$permission])) {
-                    $mappings[] = [$roleIds['Teknisi'], $permissionIds[$permission]];
-                }
-            }
-        }
-
-        if (isset($roleIds['Manajemen'])) {
-            foreach (['maintenance.view', 'maintenance.approve'] as $permission) {
-                if (isset($permissionIds[$permission])) {
-                    $mappings[] = [$roleIds['Manajemen'], $permissionIds[$permission]];
-                }
-            }
-        }
-
         if (isset($roleIds['Admin Inventaris'])) {
-            foreach (['maintenance.view', 'maintenance.create', 'maintenance.update'] as $permission) {
+            foreach (['category.manage', 'location.manage', 'unit.manage'] as $permission) {
                 if (isset($permissionIds[$permission])) {
                     $mappings[] = [$roleIds['Admin Inventaris'], $permissionIds[$permission]];
+                }
+            }
+        }
+
+        if (isset($roleIds['Petugas Inventaris'])) {
+            foreach (['category.manage', 'location.manage', 'unit.manage'] as $permission) {
+                if (isset($permissionIds[$permission])) {
+                    $mappings[] = [$roleIds['Petugas Inventaris'], $permissionIds[$permission]];
                 }
             }
         }

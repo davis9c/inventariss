@@ -162,6 +162,11 @@
 
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header d-flex justify-content-between"><strong>Dokumen Barang</strong><button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#documentModal">Tambah Dokumen</button></div><div class="card-body"><?php if (empty($documents)): ?><p class="text-muted mb-0">Belum ada dokumen.</p><?php else: ?><ul class="mb-0"><?php foreach ($documents as $document): ?><li><a target="_blank" href="<?= base_url('attachments/file/document/' . $document['id']) ?>"><?= esc($document['document_type']) ?> — <?= esc($document['document_number'] ?: $document['original_name']) ?></a> <small class="text-muted">(<?= esc(waktu_utc7($document['created_at'])) ?>)</small></li><?php endforeach; ?></ul><?php endif; ?></div></div></div>
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header d-flex justify-content-between"><strong>Histori Foto Kondisi</strong><button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#photoModal">Tambah Foto</button></div><div class="card-body"><?php if (empty($photos)): ?><p class="text-muted mb-0">Belum ada foto.</p><?php else: ?><div class="row g-2"><?php foreach ($photos as $photo): ?><div class="col-4"><a href="<?= base_url('attachments/file/photo/' . $photo['id']) ?>" target="_blank"><img class="img-fluid rounded" src="<?= base_url('attachments/file/photo/' . $photo['id']) ?>" alt="<?= esc($photo['caption'] ?: 'Foto barang') ?>"></a><small><?= esc($photo['caption']) ?></small></div><?php endforeach; ?></div><?php endif; ?></div></div></div>
+    </div>
+
     <!-- RIWAYAT PERGERAKAN STOK -->
     <div class="card shadow-sm mb-4">
 
@@ -185,6 +190,7 @@
                             <th>Saldo</th>
                             <th>Lokasi</th>
                             <th>Keterangan</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
 
@@ -278,7 +284,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Catatan</label>
@@ -342,7 +348,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Catatan</label>
@@ -389,7 +395,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Alasan</label>
@@ -435,7 +441,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Alasan</label>
@@ -451,7 +457,9 @@
     </div>
 </div>
 
-
+<div class="modal fade" id="documentModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/document/stock_item/' . $item['id']) ?>"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Dokumen</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input name="document_type" class="form-control mb-2" placeholder="Jenis dokumen" required><input name="document_number" class="form-control mb-2" placeholder="Nomor dokumen"><input name="document_date" type="date" class="form-control mb-2"><input name="valid_until" type="date" class="form-control mb-2" placeholder="Berlaku sampai"><input name="file" type="file" class="form-control" accept=".pdf,image/*" required></div><div class="modal-footer"><button class="btn btn-primary">Simpan</button></div></form></div></div>
+<div class="modal fade" id="photoModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/photo/stock_item/' . $item['id']) ?>"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input name="caption" class="form-control mb-2" placeholder="Kondisi/keterangan foto"><input name="file" type="file" class="form-control" accept="image/*" capture="environment" required></div><div class="modal-footer"><button class="btn btn-primary">Simpan Foto</button></div></form></div></div>
+<div class="modal fade" id="evidenceModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><form class="modal-content" method="post" enctype="multipart/form-data" action="<?= base_url('attachments/evidence/0') ?>" id="evidenceForm"><?= csrf_field() ?><div class="modal-header"><h5 class="modal-title">Tambah Bukti</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label class="form-label">Jenis Bukti</label><select name="evidence_type" class="form-select mb-3"><option>Foto</option><option>Dokumen</option></select><label class="form-label">File (PDF/JPG/PNG/WebP, max 10 MB)</label><input name="file" type="file" accept=".pdf,image/jpeg,image/png,image/webp" capture="environment" class="form-control mb-3" required><label class="form-label">Keterangan</label><textarea name="notes" class="form-control"></textarea></div><div class="modal-footer"><button class="btn btn-primary">Upload Bukti</button></div></form></div></div>
 
 <script>
 (function () {
@@ -510,7 +518,11 @@
             } },
             { data: 'balance', render: function (data) { return '<strong>' + Inventaris.esc(data) + ' ' + Inventaris.esc(satuan) + '</strong>'; } },
             { data: null, render: function (data, type, row) { return locationHtml(row); } },
-            { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } }
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } },
+            { data: null, orderable: false, searchable: false, render: function (data, type, row) {
+                return '<a href="' + Inventaris.baseUrl + 'stock-movements/' + row.id + '" class="btn btn-sm btn-info">Detail</a> ' +
+                    '<button type="button" class="btn btn-sm btn-primary btn-evidence" data-id="' + row.id + '">Bukti</button>';
+            } }
         ]
     });
 
@@ -624,6 +636,15 @@
         Inventaris.submitAjax(this, {
             onSuccess: function (json) { afterTransaction(json, 'adjustmentModal', e.target); }
         });
+    });
+
+    document.getElementById('tabel-riwayat').addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-evidence');
+        if (!btn) return;
+        var evidenceForm = document.getElementById('evidenceForm');
+        evidenceForm.action = Inventaris.baseUrl + 'attachments/evidence/' + btn.getAttribute('data-id');
+        evidenceForm.reset();
+        Inventaris.openModal('evidenceModal');
     });
 })();
 </script>

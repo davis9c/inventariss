@@ -29,6 +29,30 @@ if (!function_exists('isSuperAdmin')) {
 }
 
 
+if (!function_exists('hasAppAccess')) {
+    function hasAppAccess(): bool
+    {
+        if (!session()->get('isLoggedIn')) {
+            return false;
+        }
+
+        if (isSuperAdmin()) {
+            return true;
+        }
+
+        $roles = session()->get('roles') ?? [];
+
+        foreach ($roles as $role) {
+            if ($role !== 'Akun Dasar') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+
 /*
 |--------------------------------------------------------------------------
 | Permission

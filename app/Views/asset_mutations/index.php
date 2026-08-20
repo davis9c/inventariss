@@ -108,7 +108,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tanggal Mutasi</label>
-                            <input type="date" name="mutation_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            <input type="datetime-local" name="mutation_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Alasan</label>

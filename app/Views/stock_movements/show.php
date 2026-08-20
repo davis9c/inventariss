@@ -18,7 +18,6 @@
                 class="btn btn-secondary">
                 Kembali
             </a>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#evidenceModal">Tambah Bukti</button>
         </div>
 
     </div>
@@ -49,7 +48,7 @@
                         <tr>
                             <th>Tanggal</th>
                             <td>
-                                <?= esc($transaction['transaction_date']) ?>
+                                <?= esc(waktu_utc7($transaction['transaction_date'])) ?>
                             </td>
                         </tr>
 
@@ -152,9 +151,11 @@
                                 <?= esc($transaction['reason'] ?? '-') ?>
                             </td>
                         </tr>
+                        <?php if (in_array($transaction['transaction_type'], ['Keluar', 'Keluar Perusahaan'])): ?>
                         <tr><th>Jenis/Tujuan</th><td><?= esc(($transaction['outbound_type'] ?? '-') . ' / ' . ($transaction['recipient_name'] ?? '-')) ?></td></tr>
                         <tr><th>Unit & Dokumen</th><td><?= esc(($transaction['destination_unit'] ?? '-') . ' / ' . ($transaction['document_number'] ?? '-')) ?></td></tr>
                         <tr><th>Serah Terima</th><td><?= esc(($transaction['handed_over_by'] ?? '-') . ' / ' . ($transaction['received_by'] ?? '-')) ?></td></tr>
+                        <?php endif; ?>
 
                         <tr>
                             <th>Catatan</th>
@@ -173,7 +174,7 @@
                         <tr>
                             <th>Dibuat Pada</th>
                             <td>
-                                <?= esc($transaction['created_at'] ?? '-') ?>
+                                <?= esc(waktu_utc7($transaction['created_at'] ?? null)) ?>
                             </td>
                         </tr>
 
@@ -182,6 +183,66 @@
                 </div>
 
             </div>
+
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+
+            <strong>Bukti Transaksi</strong>
+
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#evidenceModal">
+                + Tambah Bukti
+            </button>
+
+        </div>
+
+        <div class="card-body">
+
+            <?php if (empty($evidence)): ?>
+
+                <p class="text-muted mb-0">Belum ada bukti transaksi.</p>
+
+            <?php else: ?>
+
+                <ul class="mb-0">
+
+                    <?php foreach ($evidence as $file): ?>
+
+                        <li class="mb-2">
+                            <span class="badge bg-<?= $file['evidence_type'] === 'Foto' ? 'info' : 'secondary' ?>">
+                                <?= esc($file['evidence_type']) ?>
+                            </span>
+                            <a target="_blank"
+                               href="<?= base_url('attachments/file/evidence/' . $file['id']) ?>">
+                                <?= esc($file['original_name']) ?>
+                            </a>
+                            <?php if ($file['evidence_type'] === 'Foto'): ?>
+                                <a target="_blank"
+                                   href="<?= base_url('attachments/file/evidence/' . $file['id']) ?>">
+                                    <img src="<?= base_url('attachments/file/evidence/' . $file['id']) ?>"
+                                         class="img-thumbnail ms-2"
+                                         style="max-width: 60px; max-height: 60px;"
+                                         alt="<?= esc($file['original_name']) ?>">
+                                </a>
+                            <?php endif; ?>
+                            <?php if (!empty($file['notes'])): ?>
+                                <small class="text-muted">— <?= esc($file['notes']) ?></small>
+                            <?php endif; ?>
+                            <small class="text-muted">(<?= esc(waktu_utc7($file['created_at'])) ?>)</small>
+                        </li>
+
+                    <?php endforeach; ?>
+
+                </ul>
+
+            <?php endif; ?>
 
         </div>
 

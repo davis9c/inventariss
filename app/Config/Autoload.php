@@ -94,5 +94,6 @@ class Autoload extends AutoloadConfig
         'location',
         'option',
         'setup',
+        'waktu',
     ];
 }

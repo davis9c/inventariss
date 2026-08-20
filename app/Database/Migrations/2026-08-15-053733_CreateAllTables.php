@@ -461,104 +461,6 @@ class CreateAllTables extends Migration
         $this->forge->addForeignKey('asset_id', 'assets', 'id', 'CASCADE', 'RESTRICT');
         $this->forge->createTable('stock_opname_details');
 
-        // maintenances
-        $this->forge->addField([
-            'id' => [
-                'type'           => 'INT',
-                'unsigned'       => true,
-                'auto_increment' => true,
-            ],
-            'maintenance_code' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 50,
-                'unique'     => true,
-            ],
-            'asset_id' => [
-                'type'     => 'INT',
-                'unsigned' => true,
-            ],
-            'maintenance_date' => [
-                'type' => 'DATE',
-            ],
-            'maintenance_type' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Preventive', 'Corrective', 'Inspection'],
-            ],
-            'problem' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'action_taken' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'technician_type' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Internal', 'External'],
-            ],
-            'technician_id' => [
-                'type'     => 'INT',
-                'unsigned' => true,
-                'null'     => true,
-            ],
-            'technician_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 150,
-                'null'       => true,
-            ],
-            'vendor_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 150,
-                'null'       => true,
-            ],
-            'cost' => [
-                'type'       => 'DECIMAL',
-                'constraint' => '15,2',
-                'default'    => 0,
-            ],
-            'status' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Diajukan', 'Diproses', 'Selesai', 'Dibatalkan'],
-                'default'    => 'Diajukan',
-            ],
-            'approved_by' => [
-                'type' => 'INT',
-                'null' => true,
-            ],
-            'approved_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'approval_notes' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'completed_date' => [
-                'type' => 'DATE',
-                'null' => true,
-            ],
-            'notes' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'created_by' => [
-                'type'     => 'INT',
-                'unsigned' => true,
-                'null'     => true,
-            ],
-            'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-        ]);
-        $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('asset_id', 'assets', 'id', 'CASCADE', 'RESTRICT');
-        $this->forge->addForeignKey('technician_id', 'users', 'id', 'SET NULL', 'CASCADE');
-        $this->forge->createTable('maintenances');
 
         // user_roles
         $this->forge->addField([
@@ -632,7 +534,6 @@ class CreateAllTables extends Migration
         $this->forge->dropTable('unit_locations');
         $this->forge->dropTable('user_locations');
         $this->forge->dropTable('user_roles');
-        $this->forge->dropTable('maintenances');
         $this->forge->dropTable('stock_opname_details');
         $this->forge->dropTable('stock_opnames');
         $this->forge->dropTable('asset_mutations');

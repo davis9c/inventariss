@@ -306,7 +306,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $db = db_connect();
         $db->table('inventory_transactions')->insert([
             'transaction_code' => 'TRX-TEST-1',
-            'transaction_date' => date('Y-m-d'),
+            'transaction_date' => date('Y-m-d\\TH:i'),
             'transaction_type' => 'Masuk',
             'item_type'        => 'Barang Stok',
             'stock_item_id'    => $this->ids['stock_items'][0],
@@ -338,7 +338,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $db = db_connect();
         $db->table('inventory_transactions')->insert([
             'transaction_code' => 'TRX-TEST-2',
-            'transaction_date' => date('Y-m-d'),
+            'transaction_date' => date('Y-m-d\\TH:i'),
             'transaction_type' => 'Mutasi',
             'item_type'        => 'Aset',
             'asset_id'         => $this->ids['assets'][0],
@@ -429,7 +429,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $db = db_connect();
         $db->table('inventory_transactions')->insert([
             'transaction_code' => 'TRX-TEST-3',
-            'transaction_date' => date('Y-m-d'),
+            'transaction_date' => date('Y-m-d\\TH:i'),
             'transaction_type' => 'Perolehan',
             'item_type'        => 'Aset',
             'asset_id'         => $this->ids['assets'][0],
@@ -488,7 +488,7 @@ final class UiAjaxTest extends CIUnitTestCase
     {
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/assets/asset-out/' . $this->ids['assets'][0], [
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
                 'outbound_type'    => 'Pemindahan',
                 'recipient_name'   => 'TEST PENERIMA',
                 'reason'           => 'TEST keluar',
@@ -511,7 +511,7 @@ final class UiAjaxTest extends CIUnitTestCase
 
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/assets/asset-return/' . $this->ids['assets'][0], [
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
             ]);
 
         $json = $this->json($result);
@@ -554,7 +554,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/stock-items/stock-in/' . $this->ids['stock_items'][0], [
                 'quantity'         => 4,
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
             ]);
 
         $json = $this->json($result);
@@ -571,7 +571,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/stock-items/stock-out/' . $this->ids['stock_items'][0], [
                 'quantity'         => 999,
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
                 'outbound_type'    => 'Pemindahan',
                 'recipient_name'   => 'TEST PENERIMA',
             ]);
@@ -591,7 +591,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->withHeaders($this->ajaxHeaders())
             ->post('/stock-items/stock-out/' . $this->ids['stock_items'][0], [
                 'quantity'         => 2,
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
                 'outbound_type'    => 'Pemindahan',
                 'recipient_name'   => 'TEST PENERIMA',
             ]);
@@ -621,7 +621,7 @@ final class UiAjaxTest extends CIUnitTestCase
             ->post('/stock-items/transfer/' . $this->ids['stock_items'][0], [
                 'to_location_id'   => $this->ids['locations'][1],
                 'to_unit_id'       => $unit2,
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
                 'reason'           => 'TEST pindah',
             ]);
 
@@ -651,7 +651,7 @@ final class UiAjaxTest extends CIUnitTestCase
             ->post('/stock-items/adjustment/' . $this->ids['stock_items'][0], [
                 'adjustment_type'  => 'Turun',
                 'quantity'         => 1,
-                'transaction_date' => date('Y-m-d'),
+                'transaction_date' => date('Y-m-d\\TH:i'),
                 'reason'           => 'TEST selisih',
             ]);
 
@@ -742,6 +742,34 @@ final class UiAjaxTest extends CIUnitTestCase
     }
 
     /* =========================================================
+     * Role "Akun Dasar" tanpa akses modul
+     * ========================================================= */
+
+    public function testAkunDasarBlockedFromModules(): void
+    {
+        $this->withSession([
+            'user_id'      => $this->adminId,
+            'username'     => 'akundasar',
+            'location_ids' => [],
+            'name'         => 'Akun Dasar',
+            'role_ids'     => [7],
+            'roles'        => ['Akun Dasar'],
+            'permissions'  => [],
+            'isLoggedIn'   => true,
+        ]);
+
+        foreach (['/assets', '/stock-items', '/stock-opnames', '/stock-movements', '/asset-mutations'] as $url) {
+            $result = $this->get($url);
+
+            $this->assertStatus($result, 302);
+            $result->assertHeader('Location', base_url('dashboard'));
+        }
+
+        $dashboard = $this->get('/dashboard');
+        $this->assertStringContainsString('Belum Ada Akses', $dashboard->getBody());
+    }
+
+    /* =========================================================
      * Jalur non-AJAX tetap dipertahankan
      * ========================================================= */
 
@@ -750,20 +778,20 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->post('/assets/delete/' . $this->ids['assets'][1]);
 
         $this->assertStatus($result, 302);
-        $result->assertHeader('Location', 'http://localhost:8898/assets');
+        $result->assertHeader('Location', base_url('assets'));
     }
 
     public function testNonAjaxStockInRedirects(): void
     {
         $result = $this->post('/stock-items/stock-in/' . $this->ids['stock_items'][0], [
             'quantity'         => 1,
-            'transaction_date' => date('Y-m-d'),
+            'transaction_date' => date('Y-m-d\\TH:i'),
         ]);
 
         $this->assertStatus($result, 302);
         $result->assertHeader(
             'Location',
-            'http://localhost:8898/stock-items/' . $this->ids['stock_items'][0]
+            base_url('stock-items/' . $this->ids['stock_items'][0])
         );
     }
 

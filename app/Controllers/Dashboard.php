@@ -21,6 +21,13 @@ class Dashboard extends BaseController
 
     public function index()
     {
+        if (!hasAppAccess()) {
+            return view('dashboard/index', [
+                'title'     => 'Dashboard',
+                'hasAccess' => false,
+            ]);
+        }
+
         $assetBuilder = $this->assetModel;
 
         if (has_location_restriction()) {
@@ -89,6 +96,7 @@ class Dashboard extends BaseController
             'heavyDamageAssets'  => $heavyDamageAssets,
             'totalLocations'     => $totalLocations,
             'totalCategories'    => $totalCategories,
+            'hasAccess'          => true,
         ]);
     }
 }

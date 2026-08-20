@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\CategoryModel;
+use App\Models\InventoryDocumentModel;
+use App\Models\InventoryPhotoModel;
 use App\Models\InventoryTransactionModel;
 use App\Models\LocationModel;
 use App\Models\StockItemModel;
@@ -444,9 +446,14 @@ class StockItem extends BaseController
                     break;
             }
 
-            $transaction['balance'] = $balance;
-            $history[]              = $transaction;
+            $transaction['balance']          = $balance;
+            $transaction['transaction_date'] = waktu_utc7($transaction['transaction_date']);
+            $transaction['created_at']       = waktu_utc7($transaction['created_at']);
+            $history[]                       = $transaction;
         }
+
+        // Tampilkan riwayat terbaru di atas (saldo tetap dihitung kronologis)
+        $history = array_reverse($history);
 
         $locationBuilder = $this->locationModel
             ->where('is_active', 1)
@@ -463,6 +470,8 @@ class StockItem extends BaseController
             'title'      => 'Detail Barang Stok',
             'item'       => $item,
             'history'    => $history,
+            'documents'  => (new InventoryDocumentModel())->where(['owner_type' => 'stock_item', 'owner_id' => $id])->orderBy('created_at', 'DESC')->findAll(),
+            'photos'     => (new InventoryPhotoModel())->where(['owner_type' => 'stock_item', 'owner_id' => $id])->orderBy('created_at', 'DESC')->findAll(),
             'categories' => $this->categoryModel
                 ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
@@ -527,6 +536,16 @@ class StockItem extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate($this->transactionRules())) {
             if ($isAjax) {
                 return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
@@ -546,7 +565,7 @@ class StockItem extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => 'Masuk',
             'item_type'        => 'Barang Stok',
             'stock_item_id'    => $id,
@@ -640,6 +659,16 @@ class StockItem extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate($this->transactionRules(true))) {
             if ($isAjax) {
                 return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
@@ -690,7 +719,7 @@ class StockItem extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => 'Keluar',
             'outbound_type'    => $this->request->getPost('outbound_type'),
             'recipient_name'   => $this->request->getPost('recipient_name'),
@@ -849,8 +878,18 @@ class StockItem extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate([
-            'transaction_date' => 'required|valid_date',
+            'transaction_date' => 'required|valid_date[Y-m-d H:i]',
             'reason'           => 'permit_empty|max_length[255]',
             'notes'            => 'permit_empty',
         ])) {
@@ -876,7 +915,7 @@ class StockItem extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => 'Pindah',
             'item_type'        => 'Barang Stok',
             'stock_item_id'    => $id,
@@ -968,10 +1007,20 @@ class StockItem extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate([
             'adjustment_type'  => 'required|in_list[Naik,Turun]',
             'quantity'         => 'required|is_natural_no_zero',
-            'transaction_date' => 'required|valid_date',
+            'transaction_date' => 'required|valid_date[Y-m-d H:i]',
             'reason'           => 'required|max_length[255]',
         ])) {
             if ($isAjax) {
@@ -1036,7 +1085,7 @@ class StockItem extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => $type,
             'item_type'        => 'Barang Stok',
             'stock_item_id'    => $id,
@@ -1170,7 +1219,7 @@ class StockItem extends BaseController
     {
         return [
             'quantity'         => 'required|is_natural_no_zero',
-            'transaction_date' => 'required|valid_date',
+            'transaction_date' => 'required|valid_date[Y-m-d H:i]',
             'notes'            => 'permit_empty',
             'outbound_type'    => ($isOutbound ? 'required' : 'permit_empty') . '|max_length[50]',
             'recipient_name'   => ($isOutbound ? 'required' : 'permit_empty') . '|max_length[150]',

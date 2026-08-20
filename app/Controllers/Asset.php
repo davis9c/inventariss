@@ -560,6 +560,12 @@ class Asset extends BaseController
             ->orderBy('inventory_transactions.id', 'DESC')
             ->findAll();
 
+        foreach ($movements as &$row) {
+            $row['transaction_date'] = waktu_utc7($row['transaction_date']);
+            $row['created_at']       = waktu_utc7($row['created_at']);
+        }
+        unset($row);
+
         /*
          * Riwayat stock opname
          */
@@ -670,8 +676,18 @@ class Asset extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate([
-            'transaction_date' => 'required|valid_date',
+            'transaction_date' => 'required|valid_date[Y-m-d H:i]',
             'outbound_type'    => 'required|max_length[50]',
             'recipient_name'   => 'required|max_length[150]',
             'destination_unit' => 'permit_empty|max_length[150]',
@@ -701,7 +717,7 @@ class Asset extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => 'Keluar Perusahaan',
             'outbound_type'    => $this->request->getPost('outbound_type'),
             'recipient_name'   => $this->request->getPost('recipient_name'),
@@ -809,8 +825,18 @@ class Asset extends BaseController
                 );
         }
 
+        $transactionDate = str_replace('T', ' ', (string) $this->request->getPost('transaction_date'));
+        $this->request->setGlobal('post', array_merge(
+            $this->request->getPost(),
+            ['transaction_date' => $transactionDate]
+        ));
+        $this->request->setGlobal('request', array_merge(
+            $this->request->getVar(),
+            ['transaction_date' => $transactionDate]
+        ));
+
         if (!$this->validate([
-            'transaction_date' => 'required|valid_date',
+            'transaction_date' => 'required|valid_date[Y-m-d H:i]',
             'notes'            => 'permit_empty',
         ])) {
             if ($isAjax) {
@@ -833,7 +859,7 @@ class Asset extends BaseController
 
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('transaction_date'),
+            'transaction_date' => waktu_wib_to_utc($transactionDate),
             'transaction_type' => 'Pengembalian',
             'item_type'        => 'Aset',
             'asset_id'         => $id,

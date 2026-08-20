@@ -202,7 +202,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Catatan</label>
@@ -264,7 +264,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tanggal</label>
-                        <input type="date" name="transaction_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="datetime-local" name="transaction_date" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Catatan</label>

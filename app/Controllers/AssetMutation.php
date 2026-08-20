@@ -31,7 +31,7 @@ class AssetMutation extends BaseController
     public function index()
     {
         if ($this->request->getGet('format') === 'json') {
-            return $this->respondAjax($this->datatableResponse(
+            $response = $this->datatableResponse(
                 'inventory_transactions',
                 function ($b) {
                     $b->select('
@@ -111,7 +111,15 @@ class AssetMutation extends BaseController
                 ],
                 'inventory_transactions.transaction_date',
                 'DESC'
-            ));
+            );
+
+            foreach ($response['data'] as &$row) {
+                $row['transaction_date'] = waktu_utc7($row['transaction_date']);
+                $row['created_at']        = waktu_utc7($row['created_at']);
+            }
+            unset($row);
+
+            return $this->respondAjax($response);
         }
 
         $assetBuilder = $this->assetModel
@@ -221,6 +229,8 @@ class AssetMutation extends BaseController
 
         $toUnitId = (int) $this->request->getPost('to_unit_id');
 
+        $mutationDate = waktu_wib_to_utc(str_replace('T', ' ', (string) $this->request->getPost('mutation_date')));
+
         if (!$toUnitId) {
             if ($isAjax) {
                 return $this->respondErrors('Unit tujuan wajib dipilih.', ['to_unit_id' => 'Unit tujuan wajib dipilih.']);
@@ -247,7 +257,7 @@ class AssetMutation extends BaseController
         // Simpan histori pergerakan (satu sumber: inventory_transactions)
         $this->transactionModel->insert([
             'transaction_code' => $this->transactionModel->generateCode(),
-            'transaction_date' => $this->request->getPost('mutation_date'),
+            'transaction_date' => $mutationDate,
             'transaction_type' => 'Mutasi',
             'item_type'        => 'Aset',
             'asset_id'         => $assetId,

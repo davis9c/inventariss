@@ -63,7 +63,7 @@
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Tanggal Transaksi</label>
 
-                        <input type="date"
+                        <input type="datetime-local"
                             name="transaction_date"
                             class="form-control <?= isset($errors['transaction_date']) ? 'is-invalid' : '' ?>"
                             value="<?= esc(old('transaction_date', date('Y-m-d'))) ?>"

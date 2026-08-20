@@ -11,6 +11,22 @@
         </p>
     </div>
 
+    <?php if (! $hasAccess): ?>
+
+        <div class="alert alert-info border-0 shadow-sm" role="alert">
+            <h5 class="alert-heading mb-2">
+                Belum Ada Akses
+            </h5>
+
+            <p class="mb-0">
+                Akun Anda belum memiliki akses ke modul apapun.
+                Silakan hubungi <strong>Administrator Inventaris</strong>
+                untuk meminta akses.
+            </p>
+        </div>
+
+    <?php else: ?>
+
     <!-- Statistik Utama -->
     <div class="row g-3 mb-4">
 
@@ -158,6 +174,8 @@
         </div>
 
     </div>
+
+    <?php endif; ?>
 
 </div>
 

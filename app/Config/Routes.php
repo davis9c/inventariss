@@ -48,7 +48,7 @@ $routes->get(
 
 $routes->group(
     'categories',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access', 'permission:category.manage']],
     static function ($routes) {
 
         $routes->get('/', 'Category::index');
@@ -69,7 +69,7 @@ $routes->group(
 
 $routes->group(
     'locations',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access', 'permission:location.manage']],
     static function ($routes) {
 
         $routes->get('/', 'Location::index');
@@ -93,7 +93,7 @@ $routes->group(
 
 $routes->group(
     'units',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access', 'permission:unit.manage']],
     static function ($routes) {
 
         $routes->get('/', 'Unit::index');
@@ -116,7 +116,7 @@ $routes->group(
 
 $routes->group(
     'assets',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access']],
     static function ($routes) {
 
         $routes->get('/', 'Asset::index');
@@ -142,7 +142,7 @@ $routes->group(
 
 $routes->group(
     'asset-mutations',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access']],
     static function ($routes) {
 
         $routes->get('/', 'AssetMutation::index');
@@ -163,7 +163,7 @@ $routes->group(
 
 $routes->group(
     'stock-items',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access']],
     static function ($routes) {
 
         $routes->get('/', 'StockItem::index');
@@ -196,7 +196,7 @@ $routes->group(
 
 $routes->group(
     'stock-opnames',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access']],
     static function ($routes) {
 
         $routes->get('/', 'StockOpname::index');
@@ -230,7 +230,7 @@ $routes->group(
 
 $routes->group(
     'stock-movements',
-    ['filter' => 'auth'],
+    ['filter' => ['auth', 'app_access']],
     static function ($routes) {
 
         $routes->get('/', 'InventoryTransaction::index');
@@ -238,7 +238,7 @@ $routes->group(
     }
 );
 
-$routes->group('attachments', ['filter' => 'auth'], static function ($routes) {
+$routes->group('attachments', ['filter' => ['auth', 'app_access']], static function ($routes) {
     $routes->post('document/(:segment)/(:num)', 'Attachment::storeDocument/$1/$2');
     $routes->post('photo/(:segment)/(:num)', 'Attachment::storePhoto/$1/$2');
     $routes->post('evidence/(:num)', 'Attachment::storeEvidence/$1');
@@ -305,4 +305,4 @@ $routes->group(
     }
 );
 
-$routes->get('reports/assets', 'Report::assets');
+$routes->get('reports/assets', 'Report::assets', ['filter' => ['auth', 'app_access']]);

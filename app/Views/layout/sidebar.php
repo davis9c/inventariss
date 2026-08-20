@@ -25,10 +25,14 @@
             in_array('Admin Inventaris', $roles) ||
             in_array('Petugas Inventaris', $roles);
 
-        $canManageLocation =
-            $isSuperAdmin ||
-            in_array('Admin Inventaris', $roles) ||
-            in_array('Petugas Inventaris', $roles);
+        $canManageCategories = has_permission('category.manage');
+        $canManageLocations  = has_permission('location.manage');
+        $canManageUnits      = has_permission('unit.manage');
+
+        $canManageMasterData =
+            $canManageCategories ||
+            $canManageLocations ||
+            $canManageUnits;
 
         $canReport =
             $isSuperAdmin ||
@@ -69,7 +73,7 @@
 
 
         <!-- Master Data -->
-        <?php if ($canManageLocation): ?>
+        <?php if ($canManageMasterData): ?>
 
             <hr>
 
@@ -79,20 +83,26 @@
                 </small>
             </div>
 
-            <a href="<?= base_url('categories') ?>"
-                class="nav-link text-white">
-                Kategori Barang
-            </a>
+            <?php if ($canManageCategories): ?>
+                <a href="<?= base_url('categories') ?>"
+                    class="nav-link text-white">
+                    Kategori Barang
+                </a>
+            <?php endif; ?>
 
-            <a href="<?= base_url('locations') ?>"
-                class="nav-link text-white">
-                Lokasi
-            </a>
+            <?php if ($canManageLocations): ?>
+                <a href="<?= base_url('locations') ?>"
+                    class="nav-link text-white">
+                    Lokasi
+                </a>
+            <?php endif; ?>
 
-            <a href="<?= base_url('units') ?>"
-                class="nav-link text-white">
-                Unit / Departemen
-            </a>
+            <?php if ($canManageUnits): ?>
+                <a href="<?= base_url('units') ?>"
+                    class="nav-link text-white">
+                    Unit / Departemen
+                </a>
+            <?php endif; ?>
 
         <?php endif; ?>
 
@@ -127,6 +137,19 @@
                 class="nav-link text-white">
                 Manajemen Role
             </a>
+
+        <?php endif; ?>
+
+
+        <?php if (! hasAppAccess()): ?>
+
+            <hr>
+
+            <div class="small text-secondary p-2 rounded"
+                style="background: rgba(255,255,255,.08);">
+                Akun Anda belum memiliki akses modul.
+                Hubungi Administrator Inventaris untuk meminta akses.
+            </div>
 
         <?php endif; ?>
 

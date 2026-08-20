@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\InventoryTransactionModel;
 use App\Models\LocationModel;
+use App\Models\TransactionEvidenceModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class InventoryTransaction extends BaseController
@@ -30,7 +31,7 @@ class InventoryTransaction extends BaseController
         $locationId = $this->request->getGet('location_id');
 
         if ($this->request->getGet('format') === 'json') {
-            return $this->respondAjax($this->datatableResponse(
+            $response = $this->datatableResponse(
                 'inventory_transactions',
                 function ($b) use ($dateFrom, $dateTo, $types, $itemType, $locationId) {
                     $b->select('
@@ -98,11 +99,11 @@ class InventoryTransaction extends BaseController
                     }
 
                     if ($dateFrom) {
-                        $b->where('inventory_transactions.transaction_date >=', $dateFrom);
+                        $b->where('inventory_transactions.transaction_date >=', waktu_wib_to_utc($dateFrom));
                     }
 
                     if ($dateTo) {
-                        $b->where('inventory_transactions.transaction_date <=', $dateTo);
+                        $b->where('inventory_transactions.transaction_date <=', waktu_wib_to_utc($dateTo . ' 23:59:59'));
                     }
 
                     if ($types) {
@@ -148,9 +149,16 @@ class InventoryTransaction extends BaseController
                 ],
                 'inventory_transactions.transaction_date',
                 'DESC'
-            ));
-        }
+            );
 
+            foreach ($response['data'] as &$row) {
+                $row['transaction_date'] = waktu_utc7($row['transaction_date']);
+                $row['created_at']        = waktu_utc7($row['created_at']);
+            }
+            unset($row);
+
+            return $this->respondAjax($response);
+        }
         $builder = $this->transactionModel
             ->select('
                 inventory_transactions.*,
@@ -220,11 +228,11 @@ class InventoryTransaction extends BaseController
         }
 
         if ($dateFrom) {
-            $builder->where('inventory_transactions.transaction_date >=', $dateFrom);
+            $builder->where('inventory_transactions.transaction_date >=', waktu_wib_to_utc($dateFrom));
         }
 
         if ($dateTo) {
-            $builder->where('inventory_transactions.transaction_date <=', $dateTo);
+            $builder->where('inventory_transactions.transaction_date <=', waktu_wib_to_utc($dateTo . ' 23:59:59'));
         }
 
         if ($types) {
@@ -348,6 +356,7 @@ class InventoryTransaction extends BaseController
         return view('stock_movements/show', [
             'title'       => 'Detail Transaksi',
             'transaction' => $transaction,
+            'evidence'    => (new TransactionEvidenceModel())->where('transaction_id', $id)->orderBy('created_at', 'DESC')->findAll(),
         ]);
     }
 }
