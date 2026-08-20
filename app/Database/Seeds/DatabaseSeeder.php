@@ -43,10 +43,6 @@ class DatabaseSeeder extends Seeder
                 'name'        => 'Auditor',
                 'description' => 'Melihat data dan audit log',
             ],
-            [
-                'name'        => 'Akun Dasar',
-                'description' => 'Akun tanpa akses ke modul apapun. Hubungi Administrator Inventaris untuk meminta akses.',
-            ],
         ];
 
         $builder = $this->db->table('roles');

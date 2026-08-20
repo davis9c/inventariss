@@ -76,10 +76,6 @@ class User extends BaseController
                 'label'  => 'Nama',
                 'rules' => 'required|max_length[100]',
             ],
-            'role_ids' => [
-                'label' => 'Role',
-                'rules' => 'required',
-            ],
         ];
 
         if (!$this->validate($rules)) {
@@ -91,12 +87,6 @@ class User extends BaseController
 
         $roles = $this->request->getPost('role_ids');
         $locations = $this->request->getPost('location_ids');
-        if (empty($roles)) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Pilih minimal satu role.');
-        }
 
         // Simpan user
         $this->userModel->insert([
@@ -112,12 +102,14 @@ class User extends BaseController
         $userId = $this->userModel->getInsertID();
 
         // Simpan role
-        foreach ($roles as $roleId) {
-            $this->userRoleModel->insert([
-                'user_id'    => $userId,
-                'role_id'    => $roleId,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+        if (!empty($roles)) {
+            foreach ($roles as $roleId) {
+                $this->userRoleModel->insert([
+                    'user_id'    => $userId,
+                    'role_id'    => $roleId,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
         }
 
         // Simpan lokasi
@@ -199,10 +191,6 @@ class User extends BaseController
                 'label' => 'Nama',
                 'rules' => 'required|max_length[100]',
             ],
-            'role_ids' => [
-                'label' => 'Role',
-                'rules' => 'required',
-            ],
         ];
 
         $password = $this->request->getPost('password');
@@ -255,12 +243,14 @@ class User extends BaseController
 
         $roles = $this->request->getPost('role_ids');
 
-        foreach ($roles as $roleId) {
-            $this->userRoleModel->insert([
-                'user_id'    => $id,
-                'role_id'    => $roleId,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+        if (!empty($roles)) {
+            foreach ($roles as $roleId) {
+                $this->userRoleModel->insert([
+                    'user_id'    => $id,
+                    'role_id'    => $roleId,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
         }
 
         /*

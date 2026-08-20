@@ -742,18 +742,18 @@ final class UiAjaxTest extends CIUnitTestCase
     }
 
     /* =========================================================
-     * Role "Akun Dasar" tanpa akses modul
+     * Akun tanpa role tidak memiliki akses modul
      * ========================================================= */
 
-    public function testAkunDasarBlockedFromModules(): void
+    public function testUserWithoutRolesBlockedFromModules(): void
     {
         $this->withSession([
             'user_id'      => $this->adminId,
-            'username'     => 'akundasar',
+            'username'     => 'userbiasa',
             'location_ids' => [],
-            'name'         => 'Akun Dasar',
-            'role_ids'     => [7],
-            'roles'        => ['Akun Dasar'],
+            'name'         => 'User Biasa',
+            'role_ids'     => [],
+            'roles'        => [],
             'permissions'  => [],
             'isLoggedIn'   => true,
         ]);
@@ -767,6 +767,34 @@ final class UiAjaxTest extends CIUnitTestCase
 
         $dashboard = $this->get('/dashboard');
         $this->assertStringContainsString('Belum Ada Akses', $dashboard->getBody());
+    }
+
+    public function testUserStoreWithoutRolesSucceeds(): void
+    {
+        $username = 'TEST-NOROLE-' . uniqid();
+
+        $result = $this->post('/users/store', [
+            'username' => $username,
+            'password' => 'rahasia123',
+            'name'     => 'User Tanpa Role',
+        ]);
+
+        $this->assertStatus($result, 302);
+        $result->assertHeader('Location', base_url('users'));
+
+        $db = db_connect();
+        $user = $db->table('users')
+            ->where('username', $username)
+            ->get()
+            ->getRow();
+
+        $this->assertNotNull($user);
+
+        $roleCount = $db->table('user_roles')
+            ->where('user_id', $user->id)
+            ->countAllResults();
+
+        $this->assertSame(0, $roleCount);
     }
 
     /* =========================================================

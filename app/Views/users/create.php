@@ -109,7 +109,7 @@
                     </div>
 
                     <small class="text-muted">
-                        Pilih minimal satu role.
+                        Kosongkan bila akun belum perlu akses modul.
                     </small>
 
                 </div>

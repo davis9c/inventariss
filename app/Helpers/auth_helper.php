@@ -40,15 +40,7 @@ if (!function_exists('hasAppAccess')) {
             return true;
         }
 
-        $roles = session()->get('roles') ?? [];
-
-        foreach ($roles as $role) {
-            if ($role !== 'Akun Dasar') {
-                return true;
-            }
-        }
-
-        return false;
+        return !empty(session()->get('roles') ?? []);
     }
 }
 
