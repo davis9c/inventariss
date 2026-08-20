@@ -797,6 +797,42 @@ final class UiAjaxTest extends CIUnitTestCase
         $this->assertSame(0, $roleCount);
     }
 
+    public function testLoginWithoutRolesSucceedsAndBlocksModules(): void
+    {
+        $username = 'TEST-LOGIN-NOROLE-' . uniqid();
+
+        $userId = $this->insert('users', [
+            'username'  => $username,
+            'password'  => password_hash('rahasia123', PASSWORD_DEFAULT),
+            'name'      => 'Login Tanpa Role',
+            'is_active' => 1,
+        ]);
+
+        $result = $this->post('/login', [
+            'username' => $username,
+            'password' => 'rahasia123',
+        ]);
+
+        $this->assertStatus($result, 302);
+        $result->assertHeader('Location', base_url('dashboard'));
+
+        $this->withSession([
+            'user_id'      => $userId,
+            'username'     => $username,
+            'location_ids' => [],
+            'name'         => 'Login Tanpa Role',
+            'role_ids'     => [],
+            'roles'        => [],
+            'permissions'  => [],
+            'isLoggedIn'   => true,
+        ]);
+
+        $blocked = $this->get('/assets');
+
+        $this->assertStatus($blocked, 302);
+        $blocked->assertHeader('Location', base_url('dashboard'));
+    }
+
     /* =========================================================
      * Jalur non-AJAX tetap dipertahankan
      * ========================================================= */

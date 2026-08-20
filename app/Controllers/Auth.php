@@ -61,16 +61,20 @@ class Auth extends BaseController
 
         $rolePermissionModel = new RolePermissionModel();
 
-        $permissions = $rolePermissionModel
-            ->select('permissions.name')
-            ->join(
-                'permissions',
-                'permissions.id = role_permissions.permission_id'
-            )
-            ->whereIn('role_permissions.role_id', $roleIds)
-            ->findAll();
+        $permissionNames = [];
 
-        $permissionNames = array_column($permissions, 'name');
+        if (!empty($roleIds)) {
+            $permissions = $rolePermissionModel
+                ->select('permissions.name')
+                ->join(
+                    'permissions',
+                    'permissions.id = role_permissions.permission_id'
+                )
+                ->whereIn('role_permissions.role_id', $roleIds)
+                ->findAll();
+
+            $permissionNames = array_column($permissions, 'name');
+        }
 
         session()->set([
             'user_id'      => $user['id'],
