@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Dashboard']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="mb-4">
         <h3>Dashboard Inventaris</h3>

@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Tambah Role']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <h3>Tambah Role</h3>
 

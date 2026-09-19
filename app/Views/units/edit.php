@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Edit Unit']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 

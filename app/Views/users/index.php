@@ -1,13 +1,13 @@
 <?= view('layout/header', ['title' => 'User Management']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3>User Management</h3>
             <p class="text-muted mb-0">
-                Kelola pengguna dan role aplikasi.
+                Kelola pengguna dari UserGate dan atur role/lokasi lokal.
             </p>
         </div>
 
@@ -23,99 +23,31 @@
         </div>
     <?php endif; ?>
 
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger">
+            <?= esc(session()->getFlashdata('error')) ?>
+        </div>
+    <?php endif; ?>
+
     <div class="card shadow-sm">
         <div class="card-body">
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                <table id="tabel-users" class="table table-hover align-middle">
 
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Nama</th>
                             <th>Username</th>
-                            <th>Role</th>
+                            <th>Email</th>
+                            <th>Role (Lokal)</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
 
-                    <tbody>
-
-                        <?php if (empty($users)): ?>
-
-                            <tr>
-                                <td colspan="6"
-                                    class="text-center text-muted">
-                                    Belum ada user.
-                                </td>
-                            </tr>
-
-                        <?php else: ?>
-
-                            <?php foreach ($users as $i => $user): ?>
-
-                                <tr>
-
-                                    <td><?= $i + 1 ?></td>
-
-                                    <td>
-                                        <?= esc($user['name']) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($user['username']) ?>
-                                    </td>
-
-                                    <td>
-                                        <?php if (!empty($user['roles'])): ?>
-
-                                            <?php foreach ($user['roles'] as $role): ?>
-
-                                                <span class="badge bg-primary me-1">
-                                                    <?= esc($role['name']) ?>
-                                                </span>
-
-                                            <?php endforeach; ?>
-
-                                        <?php else: ?>
-
-                                            <span class="text-muted">
-                                                Belum ada role
-                                            </span>
-
-                                        <?php endif; ?>
-                                    </td>
-
-                                    <td>
-                                        <?php if ($user['is_active']): ?>
-                                            <span class="badge bg-success">Aktif</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">Nonaktif</span>
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-                                        <a href="<?= base_url('users/' . $user['id']) ?>"
-                                            class="btn btn-sm btn-info">
-                                            Detail
-                                        </a>
-                                        <a href="<?= base_url('users/edit/' . $user['id']) ?>"
-                                            class="btn btn-sm btn-warning">
-                                            Edit
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        <?php endif; ?>
-
-                    </tbody>
+                    <tbody></tbody>
 
                 </table>
 
@@ -125,5 +57,69 @@
     </div>
 
 </div>
+
+<script>
+(function() {
+    var data = <?= json_encode($users) ?>;
+    var baseUrl = '<?= base_url() ?>';
+
+    new DataTable('#tabel-users', {
+        data: data,
+        columns: [
+            { data: 'name' },
+            { data: 'username' },
+            {
+                data: 'ug_data',
+                render: function(ugData) {
+                    return (ugData && ugData.email) ? Inventaris.esc(ugData.email) : '-';
+                }
+            },
+            {
+                data: 'roles',
+                render: function(roles) {
+                    if (!roles || roles.length === 0) {
+                        return '<span class="text-muted">Belum ada role</span>';
+                    }
+                    var html = '';
+                    for (var i = 0; i < roles.length; i++) {
+                        html += '<span class="badge bg-primary me-1">' + Inventaris.esc(roles[i].name) + '</span>';
+                    }
+                    return html;
+                }
+            },
+            {
+                data: 'is_active',
+                render: function(data) {
+                    if (data) {
+                        return '<span class="badge bg-success">Aktif</span>';
+                    }
+                    return '<span class="badge bg-secondary">Nonaktif</span>';
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(row) {
+                    var detail = '<a href="' + baseUrl + '/users/' + row.id + '" class="btn btn-sm btn-info">Detail</a> ';
+                    var edit = '<a href="' + baseUrl + '/users/edit/' + row.id + '" class="btn btn-sm btn-warning">Edit</a>';
+                    return detail + edit;
+                }
+            }
+        ],
+        language: {
+            processing: 'Memuat...',
+            search: 'Cari:',
+            lengthMenu: 'Tampil _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+            zeroRecords: 'Tidak ditemukan data yang cocok',
+            emptyTable: 'Tidak ada data',
+            paginate: { first: 'Awal', last: 'Akhir', next: 'Berikut', previous: 'Sebelum' }
+        }
+    });
+})();
+</script>
 
 <?= view('layout/footer') ?>

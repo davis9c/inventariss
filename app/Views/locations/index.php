@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Lokasi']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 
@@ -45,84 +45,18 @@
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                <table id="tabel-locations" class="table table-hover align-middle">
 
                     <thead>
-                        <th>#</th>
-                        <th>Nama Lokasi</th>
-                        <th>Deskripsi</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
+                        <tr>
+                            <th>Nama Lokasi</th>
+                            <th>Deskripsi</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
                     </thead>
 
-                    <tbody>
-
-                        <?php if (empty($locations)): ?>
-
-                            <tr>
-                                <td colspan="5"
-                                    class="text-center text-muted">
-                                    Belum ada data lokasi.
-                                </td>
-                            </tr>
-
-                        <?php else: ?>
-
-                            <?php foreach ($locations as $index => $location): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= $index + 1 ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($location['name']) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($location['description'] ?? '-') ?>
-                                    </td>
-
-                                    <td>
-
-                                        <?php if ($location['is_active']): ?>
-
-                                            <span class="badge bg-success">
-                                                Aktif
-                                            </span>
-
-                                        <?php else: ?>
-
-                                            <span class="badge bg-secondary">
-                                                Tidak Aktif
-                                            </span>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <a href="<?= base_url('locations/' . $location['id']) ?>"
-                                            class="btn btn-info btn-sm">
-                                            Detail
-                                        </a>
-
-                                        <a href="<?= base_url('locations/edit/' . $location['id']) ?>"
-                                            class="btn btn-warning btn-sm">
-                                            Edit
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        <?php endif; ?>
-
-                    </tbody>
+                    <tbody></tbody>
 
                 </table>
 
@@ -133,5 +67,53 @@
     </div>
 
 </div>
+
+<script>
+(function() {
+    var data = <?= json_encode($locations) ?>;
+    var baseUrl = '<?= base_url() ?>';
+
+    new DataTable('#tabel-locations', {
+        data: data,
+        columns: [
+            { data: 'name' },
+            {
+                data: 'description',
+                defaultContent: '-'
+            },
+            {
+                data: 'is_active',
+                render: function(data) {
+                    if (data) {
+                        return '<span class="badge bg-success">Aktif</span>';
+                    }
+                    return '<span class="badge bg-secondary">Tidak Aktif</span>';
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(row) {
+                    var detail = '<a href="' + baseUrl + '/locations/' + row.id + '" class="btn btn-info btn-sm">Detail</a> ';
+                    var edit = '<a href="' + baseUrl + '/locations/edit/' + row.id + '" class="btn btn-warning btn-sm">Edit</a>';
+                    return detail + edit;
+                }
+            }
+        ],
+        language: {
+            processing: 'Memuat...',
+            search: 'Cari:',
+            lengthMenu: 'Tampil _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+            zeroRecords: 'Tidak ditemukan data yang cocok',
+            emptyTable: 'Tidak ada data',
+            paginate: { first: 'Awal', last: 'Akhir', next: 'Berikut', previous: 'Sebelum' }
+        }
+    });
+})();
+</script>
 
 <?= view('layout/footer') ?>

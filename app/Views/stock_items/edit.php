@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Edit Barang Stok']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <h3>Edit Barang Stok</h3>
 

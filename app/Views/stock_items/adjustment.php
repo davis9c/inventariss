@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Penyesuaian Stok']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <h3>Penyesuaian Stok</h3>
 

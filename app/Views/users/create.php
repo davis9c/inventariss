@@ -1,9 +1,10 @@
 <?= view('layout/header', ['title' => 'Tambah User']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <h3>Tambah User</h3>
+    <p class="text-muted">User akan dibuat di UserGate.</p>
 
     <div class="card shadow-sm mt-4">
 
@@ -51,13 +52,25 @@
 
                 <div class="mb-3">
                     <label class="form-label">
-                        Nama
+                        Email
+                    </label>
+
+                    <input type="email"
+                        name="email"
+                        class="form-control"
+                        value="<?= old('email') ?>"
+                        required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Nama Lengkap
                     </label>
 
                     <input type="text"
-                        name="name"
+                        name="full_name"
                         class="form-control"
-                        value="<?= old('name') ?>"
+                        value="<?= old('full_name') ?>"
                         required>
                 </div>
 
@@ -69,102 +82,12 @@
                     <input type="password"
                         name="password"
                         class="form-control"
+                        minlength="8"
                         required>
-                </div>
-
-                <!-- ROLE -->
-                <div class="mb-4">
-
-                    <label class="form-label fw-bold">
-                        Role
-                    </label>
-
-                    <div class="border rounded p-3">
-
-                        <?php foreach ($roles as $role): ?>
-
-                            <div class="form-check mb-2">
-
-                                <input type="checkbox"
-                                    class="form-check-input"
-                                    name="role_ids[]"
-                                    value="<?= $role['id'] ?>"
-                                    id="role_<?= $role['id'] ?>"
-                                    <?= in_array(
-                                        $role['id'],
-                                        old('role_ids') ?? []
-                                    ) ? 'checked' : '' ?>>
-
-                                <label class="form-check-label"
-                                    for="role_<?= $role['id'] ?>">
-
-                                    <?= esc($role['name']) ?>
-
-                                </label>
-
-                            </div>
-
-                        <?php endforeach; ?>
-
-                    </div>
 
                     <small class="text-muted">
-                        Pilih minimal satu role.
+                        Minimal 8 karakter.
                     </small>
-
-                </div>
-
-                <!-- LOKASI -->
-                <div class="mb-4">
-
-                    <label class="form-label fw-bold">
-                        Lokasi Tanggung Jawab
-                    </label>
-
-                    <div class="border rounded p-3">
-
-                        <?php if (empty($locations)): ?>
-
-                            <div class="text-muted">
-                                Belum ada lokasi.
-                            </div>
-
-                        <?php else: ?>
-
-                            <?php foreach ($locations as $location): ?>
-
-                                <div class="form-check mb-2">
-
-                                    <input type="checkbox"
-                                        class="form-check-input"
-                                        name="location_ids[]"
-                                        value="<?= $location['id'] ?>"
-                                        id="location_<?= $location['id'] ?>"
-                                        <?= in_array(
-                                            $location['id'],
-                                            old('location_ids') ?? []
-                                        ) ? 'checked' : '' ?>>
-
-                                    <label class="form-check-label"
-                                        for="location_<?= $location['id'] ?>">
-
-                                        <?= esc($location['name']) ?>
-
-                                    </label>
-
-                                </div>
-
-                            <?php endforeach; ?>
-
-                        <?php endif; ?>
-
-                    </div>
-
-                    <small class="text-muted">
-                        User dapat memiliki lebih dari satu lokasi.
-                        Kosongkan jika user tidak memiliki pembatasan lokasi.
-                    </small>
-
                 </div>
 
                 <div class="d-flex gap-2">

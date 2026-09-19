@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Detail Lokasi']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 
@@ -152,11 +152,10 @@
 
                 <div class="table-responsive">
 
-                    <table class="table table-hover align-middle mb-0">
+                    <table id="tabel-location-assets" class="table table-hover align-middle mb-0">
 
                         <thead>
                             <tr>
-                                <th>#</th>
                                 <th>Kode Aset</th>
                                 <th>Nama Barang</th>
                                 <th>Unit</th>
@@ -164,37 +163,7 @@
                             </tr>
                         </thead>
 
-                        <tbody>
-
-                            <?php foreach ($assets as $index => $asset): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= $index + 1 ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['asset_code']) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['name']) ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['unit_name'] ?? '-') ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['asset_status'] ?? '-') ?>
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        </tbody>
+                        <tbody></tbody>
 
                     </table>
 
@@ -207,5 +176,40 @@
     </div>
 
 </div>
+
+<?php if (!empty($assets)): ?>
+<script>
+(function() {
+    var data = <?= json_encode($assets) ?>;
+
+    new DataTable('#tabel-location-assets', {
+        data: data,
+        columns: [
+            { data: 'asset_code' },
+            { data: 'name' },
+            {
+                data: 'unit_name',
+                defaultContent: '-'
+            },
+            {
+                data: 'asset_status',
+                defaultContent: '-'
+            }
+        ],
+        language: {
+            processing: 'Memuat...',
+            search: 'Cari:',
+            lengthMenu: 'Tampil _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+            zeroRecords: 'Tidak ditemukan data yang cocok',
+            emptyTable: 'Tidak ada data',
+            paginate: { first: 'Awal', last: 'Akhir', next: 'Berikut', previous: 'Sebelum' }
+        }
+    });
+})();
+</script>
+<?php endif; ?>
 
 <?= view('layout/footer') ?>

@@ -241,7 +241,7 @@ $routes->group(
 | Users
 |--------------------------------------------------------------------------
 |
-| Khusus Super Admin.
+| Hanya Admin Inventaris (dan Super Admin).
 |
 */
 
@@ -250,7 +250,7 @@ $routes->group(
     [
         'filter' => [
             'auth',
-            'role:Super Admin',
+            'role:Admin Inventaris,Super Admin',
         ],
     ],
     static function ($routes) {
@@ -258,9 +258,12 @@ $routes->group(
         $routes->get('/', 'User::index');
         $routes->get('create', 'User::create');
         $routes->post('store', 'User::store');
+        $routes->get('(:num)', 'User::show/$1');
         $routes->get('edit/(:num)', 'User::edit/$1');
         $routes->post('update/(:num)', 'User::update/$1');
-        $routes->get('(:num)', 'User::show/$1');
+        $routes->post('delete/(:num)', 'User::delete/$1');
+        $routes->post('(:num)/roles', 'User::updateRoles/$1');
+        $routes->post('(:num)/locations', 'User::updateLocations/$1');
     }
 );
 

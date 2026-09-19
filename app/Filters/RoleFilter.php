@@ -16,15 +16,22 @@ class RoleFilter implements FilterInterface
             return redirect()->to('/login');
         }
 
-        $requiredRole = $arguments[0] ?? null;
+        // Super Admin selalu boleh akses
+        $userRoles = session()->get('roles') ?? [];
+        if (in_array('Super Admin', $userRoles, true)) {
+            return null;
+        }
 
-        if (!$requiredRole) {
+        if (empty($arguments)) {
             return redirect()->to('/dashboard');
         }
 
-        $roles = session()->get('roles') ?? [];
+        // Dukung multiple role: "Admin Inventaris,Super Admin"
+        $requiredRoles = array_map('trim', explode(',', $arguments[0]));
 
-        if (!in_array($requiredRole, $roles)) {
+        $hasAccess = !empty(array_intersect($requiredRoles, $userRoles));
+
+        if (!$hasAccess) {
             return redirect()
                 ->to('/dashboard')
                 ->with(

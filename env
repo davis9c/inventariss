@@ -20,7 +20,7 @@ CI_ENVIRONMENT = development
 # APP
 #--------------------------------------------------------------------
 
-app.baseURL = 'http://localhost:9989/'
+app.baseURL = 'http://localhost:8082/'
 # If you have trouble with `.`, you could also use `_`.
 # app_baseURL = ''
 # app.forceGlobalSecureRequests = false
@@ -30,10 +30,10 @@ app.baseURL = 'http://localhost:9989/'
 # DATABASE
 #--------------------------------------------------------------------
 
-database.default.hostname = localhost
-database.default.database = db_inventori
-database.default.username = 
-database.default.password = 
+database.default.hostname = 10.10.10.12
+database.default.database = dev_inventaris
+database.default.username = u24
+database.default.password = 11
 database.default.DBDriver = MySQLi
 database.default.DBPrefix =
 database.default.port = 3306
@@ -67,3 +67,10 @@ database.default.port = 3306
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+#--------------------------------------------------------------------
+# USERGATE API
+#--------------------------------------------------------------------
+
+usergate.url = 'https://localhost:8081/api/v1'
+usergate.api_key = 'your-api-key-here'

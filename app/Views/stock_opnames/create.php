@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Buat Stock Opname']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <h3>Buat Stock Opname</h3>
 

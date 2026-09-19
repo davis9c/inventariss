@@ -1,101 +1,85 @@
-<?= view('layout/header', ['title' => 'Lokasi']) ?>
+<?= view('layout/header', ['title' => 'Manajemen Role']) ?>
 <?= view('layout/sidebar') ?>
-<div class="p-4">
-    <h3>Manajemen Role</h3>
 
-    <div class="d-flex justify-content-between mb-3">
+<div class="mb-4">
 
-        <p class="text-muted">
-            Kelola role pengguna sistem.
-        </p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3>Manajemen Role</h3>
+            <p class="text-muted mb-0">Kelola role pengguna sistem.</p>
+        </div>
 
-        <a href="<?= base_url('roles/create') ?>"
-            class="btn btn-primary">
+        <a href="<?= base_url('roles/create') ?>" class="btn btn-primary">
             + Tambah Role
         </a>
-
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
-
         <div class="alert alert-success">
             <?= esc(session()->getFlashdata('success')) ?>
         </div>
-
     <?php endif; ?>
 
     <div class="card shadow-sm">
-
         <div class="card-body">
-
-            <table class="table table-bordered">
-
-                <thead>
-                    <tr>
-                        <th width="60">#</th>
-                        <th>Role</th>
-                        <th>Deskripsi</th>
-                        <th width="180">Aksi</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <?php foreach ($roles as $i => $role): ?>
-
+            <div class="table-responsive">
+                <table id="tabel-roles" class="table table-hover align-middle w-100">
+                    <thead>
                         <tr>
-
-                            <td>
-                                <?= $i + 1 ?>
-                            </td>
-
-                            <td>
-                                <strong>
-                                    <?= esc($role['name']) ?>
-                                </strong>
-                            </td>
-
-                            <td>
-                                <?= esc($role['description']) ?>
-                            </td>
-
-                            <td>
-                                <a href="<?= base_url('roles/' . $role['id']) ?>"
-                                    class="btn btn-sm btn-info">
-                                    Detail
-                                </a>
-                                <a href="<?= base_url('roles/edit/' . $role['id']) ?>"
-                                    class="btn btn-warning btn-sm">
-                                    Edit
-                                </a>
-
-                                <form action="<?= base_url('roles/delete/' . $role['id']) ?>"
-                                    method="post"
-                                    class="d-inline">
-
-                                    <?= csrf_field() ?>
-
-                                    <button type="submit"
-                                        class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Hapus role ini?')">
-                                        Hapus
-                                    </button>
-
-                                </form>
-
-                            </td>
-
+                            <th>Role</th>
+                            <th>Deskripsi</th>
+                            <th>Aksi</th>
                         </tr>
-
-                    <?php endforeach; ?>
-
-                </tbody>
-
-            </table>
-
+                    </thead>
+                </table>
+            </div>
         </div>
-
     </div>
+
 </div>
 
+<script>
+(function () {
+    'use strict';
+    var baseUrl = Inventaris.baseUrl;
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+    var data = <?= json_encode($roles) ?>;
+
+    var dt = new DataTable('#tabel-roles', {
+        data: data,
+        columns: [
+            { data: 'name', render: function (d) { return '<strong>' + Inventaris.esc(d) + '</strong>'; } },
+            { data: 'description', render: function (d) { return Inventaris.esc(d) || '-'; } },
+            { data: null, orderable: false, searchable: false, render: function (d) {
+                return '<a href="' + baseUrl + 'roles/' + d.id + '" class="btn btn-sm btn-info">Detail</a> ' +
+                    '<a href="' + baseUrl + 'roles/edit/' + d.id + '" class="btn btn-sm btn-warning">Edit</a> ' +
+                    '<button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' + d.id + '" data-name="' + Inventaris.esc(d.name) + '">Hapus</button>';
+            }}
+        ],
+        language: { processing: 'Memuat...', search: 'Cari:', lengthMenu: 'Tampil _MENU_ baris', info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data', infoEmpty: 'Tidak ada data', infoFiltered: '(difilter dari _MAX_ total)', zeroRecords: 'Tidak ditemukan', emptyTable: 'Tidak ada data', paginate: { first: 'Awal', last: 'Akhir', next: 'Berikut', previous: 'Sebelum' } }
+    });
+
+    document.getElementById('tabel-roles').addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-delete');
+        if (!btn) return;
+        Inventaris.confirm({
+            title: 'Hapus Role',
+            message: 'Hapus role "' + btn.getAttribute('data-name') + '"?',
+            onConfirm: function () {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = baseUrl + 'roles/delete/' + btn.getAttribute('data-id');
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = csrfName;
+                input.value = csrfHash;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+})();
+</script>
 <?= view('layout/footer') ?>

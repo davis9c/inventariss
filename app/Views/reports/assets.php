@@ -1,7 +1,7 @@
 <?= view('layout/header', ['title' => 'Laporan Inventaris']) ?>
 <?= view('layout/sidebar') ?>
 
-<div class="p-4">
+<div class="mb-4">
 
     <div class="mb-4">
         <h3>Laporan Inventaris</h3>
@@ -204,12 +204,11 @@
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                <table id="tabel-report-assets" class="table table-hover align-middle">
 
                     <thead>
 
                         <tr>
-                            <th>#</th>
                             <th>Kode Aset</th>
                             <th>Nama Barang</th>
                             <th>Kategori</th>
@@ -221,134 +220,7 @@
 
                     </thead>
 
-                    <tbody>
-
-                        <?php if (empty($assets)): ?>
-
-                            <tr>
-
-                                <td colspan="8"
-                                    class="text-center text-muted">
-
-                                    Tidak ada data inventaris.
-
-                                </td>
-
-                            </tr>
-
-                        <?php else: ?>
-
-                            <?php foreach ($assets as $i => $asset): ?>
-
-                                <tr>
-
-                                    <td>
-                                        <?= $i + 1 ?>
-                                    </td>
-
-                                    <td>
-                                        <strong>
-                                            <?= esc($asset['asset_code']) ?>
-                                        </strong>
-                                    </td>
-
-                                    <td>
-
-                                        <?= esc($asset['name']) ?>
-
-                                        <?php if (!empty($asset['serial_number'])): ?>
-
-                                            <br>
-
-                                            <small class="text-muted">
-                                                SN:
-                                                <?= esc($asset['serial_number']) ?>
-                                            </small>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['category_name'] ?? '-') ?>
-                                    </td>
-
-                                    <td>
-                                        <?= esc($asset['unit_name'] ?? '-') ?>
-                                    </td>
-
-                                    <td>
-
-                                        <?= esc($asset['location_name'] ?? '-') ?>
-
-                                        <?php if (!empty($asset['building']) || !empty($asset['room'])): ?>
-
-                                            <br>
-
-                                            <small class="text-muted">
-
-                                                <?= esc($asset['building'] ?? '') ?>
-
-                                                <?php if (!empty($asset['room'])): ?>
-                                                    -
-                                                    <?= esc($asset['room']) ?>
-                                                <?php endif; ?>
-
-                                            </small>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <?php if ($asset['condition_status'] === 'Baik'): ?>
-
-                                            <span class="badge bg-success">
-                                                Baik
-                                            </span>
-
-                                        <?php elseif ($asset['condition_status'] === 'Rusak Ringan'): ?>
-
-                                            <span class="badge bg-warning text-dark">
-                                                Rusak Ringan
-                                            </span>
-
-                                        <?php else: ?>
-
-                                            <span class="badge bg-danger">
-                                                <?= esc($asset['condition_status']) ?>
-                                            </span>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <?php if ($asset['asset_status'] === 'Digunakan'): ?>
-
-                                            <span class="badge bg-success">
-                                                Digunakan
-                                            </span>
-
-                                        <?php else: ?>
-
-                                            <span class="badge bg-secondary">
-                                                <?= esc($asset['asset_status']) ?>
-                                            </span>
-
-                                        <?php endif; ?>
-
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        <?php endif; ?>
-
-                    </tbody>
+                    <tbody></tbody>
 
                 </table>
 
@@ -359,5 +231,87 @@
     </div>
 
 </div>
+
+<script>
+(function() {
+    var data = <?= json_encode($assets) ?>;
+
+    new DataTable('#tabel-report-assets', {
+        data: data,
+        columns: [
+            {
+                data: 'asset_code',
+                render: function(data) {
+                    return '<strong>' + Inventaris.esc(data) + '</strong>';
+                }
+            },
+            {
+                data: null,
+                render: function(row) {
+                    var html = Inventaris.esc(row.name);
+                    if (row.serial_number) {
+                        html += '<br><small class="text-muted">SN: ' + Inventaris.esc(row.serial_number) + '</small>';
+                    }
+                    return html;
+                }
+            },
+            {
+                data: 'category_name',
+                defaultContent: '-'
+            },
+            {
+                data: 'unit_name',
+                defaultContent: '-'
+            },
+            {
+                data: null,
+                render: function(row) {
+                    var html = Inventaris.esc(row.location_name || '-');
+                    if (row.building || row.room) {
+                        var sub = Inventaris.esc(row.building || '');
+                        if (row.room) {
+                            sub += ' - ' + Inventaris.esc(row.room);
+                        }
+                        html += '<br><small class="text-muted">' + sub + '</small>';
+                    }
+                    return html;
+                }
+            },
+            {
+                data: 'condition_status',
+                render: function(data) {
+                    if (data === 'Baik') {
+                        return '<span class="badge bg-success">Baik</span>';
+                    } else if (data === 'Rusak Ringan') {
+                        return '<span class="badge bg-warning text-dark">Rusak Ringan</span>';
+                    } else {
+                        return '<span class="badge bg-danger">' + Inventaris.esc(data) + '</span>';
+                    }
+                }
+            },
+            {
+                data: 'asset_status',
+                render: function(data) {
+                    if (data === 'Digunakan') {
+                        return '<span class="badge bg-success">Digunakan</span>';
+                    }
+                    return '<span class="badge bg-secondary">' + Inventaris.esc(data) + '</span>';
+                }
+            }
+        ],
+        language: {
+            processing: 'Memuat...',
+            search: 'Cari:',
+            lengthMenu: 'Tampil _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+            zeroRecords: 'Tidak ditemukan data yang cocok',
+            emptyTable: 'Tidak ada data',
+            paginate: { first: 'Awal', last: 'Akhir', next: 'Berikut', previous: 'Sebelum' }
+        }
+    });
+})();
+</script>
 
 <?= view('layout/footer') ?>
