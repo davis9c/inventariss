@@ -1,0 +1,43 @@
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+LICENSE
+API_REFERENCE_COMPLETE.md
+phpunit.dist.xml
+preload.php
+
+# Tests
+tests/
+
+# Environment (will be mounted or copied)
+.env
+
+# Writable (will be mounted as volume)
+writable/cache/*
+writable/debugbar/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+!writable/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if any)
+node_modules/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
