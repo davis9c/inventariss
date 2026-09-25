@@ -14,6 +14,7 @@ class RoleModel extends Model
     protected $protectFields    = true;
     protected $allowedFields = [
     'name',
+    'level',
     'description',
 ];
 

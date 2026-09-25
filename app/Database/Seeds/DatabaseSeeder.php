@@ -9,170 +9,119 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->seedRoles();
-        $this->seedPermissions();
-        $this->seedRolePermissions();
         $this->seedLocations();
         $this->seedCategories();
         $this->seedUnits();
     }
 
+    /**
+     * Daftar role aplikasi. Ini SEBAGAI-SATUNYA sumber role: tidak ada
+     * lagi CRUD role di aplikasi (tidak ada route /roles).
+     *
+     * Untuk menambah atau mengubah role, edit daftar di bawah lalu jalankan
+     * `php spark db:seed DatabaseSeeder`. Seed bersifat upsert berdasarkan
+     * nama, jadi description/level/capabilities yang sudah ada ikut diperbarui.
+     *
+     * `level` = hierarchy privilege. Angka KECIL = privilege TINGGI.
+     * Level ini dipakai oleh User::updateRoles() untuk membatasi role mana
+     * yang boleh diberikan ke user lain. PENTING: level WAJIB diisi di sini.
+     * Kolom `level` ber-default 1 (= privilege tertinggi) di database, jadi
+     * role yang somehow tidak membawa level akan dianggap Super Admin oleh
+     * isSuperAdmin() — gagal ke arah terbuka, bukan tertutup.
+     *
+     * `capabilities` = uraian fitur yang ditujukan untuk role ini (niat).
+     * Belum tentu ditegakkan filter akses; lihat /help.
+     *
+     * JANGAN rename nama role di bawah. Nama berikut dirujuk sebagai
+     * literal di dalam kode, sehingga mengganti namanya akan mematikan
+     * aksesnya tanpa ada pemulihan lewat UI:
+     *   - 'Super Admin'         → Filters/RoleFilter, Helpers/auth_helper,
+     *                             Helpers/location_helper, Auth, Setup, User
+     *   - 'Admin Inventaris',
+     *     'Manajemen',
+     *     'Petugas Inventaris',
+     *     'Auditor'              → Views/layout/navbar.php
+     *   - 'PIC Unit'             → Views/layout/navbar.php
+     */
+    private const ROLES = [
+        [
+            'name'         => 'Super Admin',
+            'level'        => 1,
+            'description'  => 'Akses penuh ke seluruh sistem',
+            'capabilities' => 'Akses penuh: master data (kategori, lokasi, unit), barang & aset, '
+                . 'barang stok, mutasi, stock opname, laporan inventaris, serta manajemen user dan role.',
+        ],
+        [
+            'name'         => 'Admin Inventaris',
+            'level'        => 2,
+            'description'  => 'Mengelola data dan transaksi inventaris',
+            'capabilities' => 'Master data, barang & aset, barang stok, mutasi, stock opname, '
+                . 'laporan inventaris, serta manajemen user (termasuk memberikan role yang sudah ada).',
+        ],
+        [
+            'name'         => 'Manajemen',
+            'level'        => 3,
+            'description'  => 'Melihat laporan dan melakukan approval',
+            'capabilities' => 'Monitoring dan laporan inventaris. Fitur approval belum tersedia '
+                . 'di sistem saat ini.',
+        ],
+        [
+            'name'         => 'Petugas Inventaris',
+            'level'        => 4,
+            'description'  => 'Melakukan operasional inventaris',
+            'capabilities' => 'Operasional inventaris harian: pencatatan barang masuk dan keluar, '
+                . 'mutasi, stock opname, serta melihat data master.',
+        ],
+        [
+            'name'         => 'PIC Unit',
+            'level'        => 5,
+            'description'  => 'Mengelola inventaris unit',
+            'capabilities' => 'Kelola inventaris unit/departemen yang menjadi tanggung jawabnya, '
+                . 'termasuk melihat dan memperbarui data barang di unit tersebut.',
+        ],
+        [
+            'name'         => 'Auditor',
+            'level'        => 6,
+            'description'  => 'Melihat data dan audit log',
+            'capabilities' => 'Read-only: melihat data inventaris dan jejak pergerakan '
+                . '(stock movement) untuk keperluan audit.',
+        ],
+    ];
+
+    /**
+     * Upsert daftar ROLES berdasarkan nama.
+     */
     private function seedRoles()
     {
-        $roles = [
-            [
-                'name'        => 'Super Admin',
-                'description' => 'Akses penuh ke seluruh sistem',
-            ],
-            [
-                'name'        => 'Admin Inventaris',
-                'description' => 'Mengelola data dan transaksi inventaris',
-            ],
-            [
-                'name'        => 'Petugas Inventaris',
-                'description' => 'Melakukan operasional inventaris',
-            ],
-            [
-                'name'        => 'PIC Unit',
-                'description' => 'Mengelola inventaris unit',
-            ],
-            [
-                'name'        => 'Manajemen',
-                'description' => 'Melihat laporan dan melakukan approval',
-            ],
-            [
-                'name'        => 'Auditor',
-                'description' => 'Melihat data dan audit log',
-            ],
-        ];
-
         $builder = $this->db->table('roles');
 
-        $existingNames = array_column(
-            $builder->select('name')->get()->getResultArray(),
-            'name'
-        );
+        $existing = [];
 
-        $inserts = array_filter(
-            $roles,
-            fn ($role) => !in_array($role['name'], $existingNames, true)
-        );
+        foreach ($builder->select('id, name')->get()->getResultArray() as $row) {
+            $existing[$row['name']] = (int) $row['id'];
+        }
 
-        if ($inserts) {
-            $builder->insertBatch($inserts);
+        $toInsert = [];
+
+        foreach (self::ROLES as $role) {
+            if (isset($existing[$role['name']])) {
+                $builder->where('id', $existing[$role['name']])->update([
+                    'level'        => $role['level'],
+                    'description'  => $role['description'],
+                    'capabilities' => $role['capabilities'],
+                ]);
+
+                continue;
+            }
+
+            $toInsert[] = $role;
+        }
+
+        if ($toInsert) {
+            $builder->insertBatch($toInsert);
         }
     }
 
-    private function seedPermissions()
-    {
-        $permissions = [
-            [
-                'name'        => 'maintenance.view',
-                'description' => 'Melihat data maintenance',
-            ],
-            [
-                'name'        => 'maintenance.create',
-                'description' => 'Membuat pengajuan maintenance',
-            ],
-            [
-                'name'        => 'maintenance.update',
-                'description' => 'Mengubah data maintenance',
-            ],
-            [
-                'name'        => 'maintenance.delete',
-                'description' => 'Menghapus data maintenance',
-            ],
-            [
-                'name'        => 'maintenance.approve',
-                'description' => 'Menyetujui atau menolak maintenance',
-            ],
-        ];
-
-        $builder = $this->db->table('permissions');
-
-        $existingNames = array_column(
-            $builder->select('name')->get()->getResultArray(),
-            'name'
-        );
-
-        $inserts = array_filter(
-            $permissions,
-            fn ($permission) => !in_array($permission['name'], $existingNames, true)
-        );
-
-        foreach ($inserts as $permission) {
-            $builder->insert([
-                ...$permission,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-        }
-    }
-
-    private function seedRolePermissions()
-    {
-        $roleIds = [];
-
-        foreach ($this->db->table('roles')->get()->getResultArray() as $role) {
-            $roleIds[$role['name']] = $role['id'];
-        }
-
-        $permissionIds = [];
-
-        foreach ($this->db->table('permissions')->get()->getResultArray() as $permission) {
-            $permissionIds[$permission['name']] = $permission['id'];
-        }
-
-        $mappings = [];
-
-        if (isset($roleIds['Super Admin'])) {
-            foreach ($permissionIds as $permissionId) {
-                $mappings[] = [$roleIds['Super Admin'], $permissionId];
-            }
-        }
-
-        if (isset($roleIds['Teknisi'])) {
-            foreach (['maintenance.view', 'maintenance.create', 'maintenance.update'] as $permission) {
-                if (isset($permissionIds[$permission])) {
-                    $mappings[] = [$roleIds['Teknisi'], $permissionIds[$permission]];
-                }
-            }
-        }
-
-        if (isset($roleIds['Manajemen'])) {
-            foreach (['maintenance.view', 'maintenance.approve'] as $permission) {
-                if (isset($permissionIds[$permission])) {
-                    $mappings[] = [$roleIds['Manajemen'], $permissionIds[$permission]];
-                }
-            }
-        }
-
-        if (isset($roleIds['Admin Inventaris'])) {
-            foreach (['maintenance.view', 'maintenance.create', 'maintenance.update'] as $permission) {
-                if (isset($permissionIds[$permission])) {
-                    $mappings[] = [$roleIds['Admin Inventaris'], $permissionIds[$permission]];
-                }
-            }
-        }
-
-        $builder = $this->db->table('role_permissions');
-
-        $existing = array_map(
-            fn ($row) => $row['role_id'] . '-' . $row['permission_id'],
-            $builder->select('role_id, permission_id')->get()->getResultArray()
-        );
-
-        $inserts = array_filter(
-            $mappings,
-            fn ($mapping) => !in_array($mapping[0] . '-' . $mapping[1], $existing, true)
-        );
-
-        foreach ($inserts as $mapping) {
-            $builder->insert([
-                'role_id'       => $mapping[0],
-                'permission_id' => $mapping[1],
-                'created_at'    => date('Y-m-d H:i:s'),
-            ]);
-        }
-    }
 
     private function seedLocations()
     {

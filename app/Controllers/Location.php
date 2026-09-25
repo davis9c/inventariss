@@ -25,23 +25,83 @@ class Location extends BaseController
 
     public function index()
     {
+        // DataTables server-side.
+        if ($this->request->getGet('format') === 'json') {
+            return $this->respondAjax($this->datatableResponse(
+                'locations',
+                static fn ($b) => $b->select('locations.*'),
+                ['name', 'building', 'description'],
+                [0 => 'name', 1 => 'building', 2 => 'description', 3 => 'is_active'],
+                'name'
+            ));
+        }
+
         return view('locations/index', [
-            'title'     => 'Lokasi',
-            'locations' => $this->locationModel
-                ->orderBy('name', 'ASC')
-                ->findAll(),
+            'title' => 'Lokasi',
+            // Dipakai oleh checkbox "unit" di modal create/edit.
+            'units' => $this->unitModel->orderBy('name', 'ASC')->findAll(),
         ]);
+    }
+
+    /**
+     * Satu lokasi sebagai JSON, untuk mengisi modal edit DAN modal detail
+     * dari halaman index.
+     *
+     * Bentuknya mengikuti Location::show() supaya modal detail
+     * menampilkan isi yang identik dengan halaman detail.
+     */
+    public function data($id)
+    {
+        $location = $this->locationModel->find($id);
+
+        if (!$location) {
+            return $this->respondError('Lokasi tidak ditemukan.', 404);
+        }
+
+        // Unit yang terkait ikut dikirim supaya modal edit bisa
+        // mencentang checkbox yang benar tanpa fetch kedua.
+        $location['unit_ids'] = array_map(
+            'intval',
+            array_column(
+                $this->unitLocationModel->where('location_id', $id)->findAll(),
+                'unit_id'
+            )
+        );
+
+        $units = db_connect()
+            ->table('unit_locations')
+            ->select('units.id, units.name, units.code, units.is_active')
+            ->join('units', 'units.id = unit_locations.unit_id')
+            ->where('unit_locations.location_id', $id)
+            ->orderBy('units.name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $assets = db_connect()
+            ->table('assets')
+            ->select('assets.id, assets.asset_code, assets.name, assets.asset_status, units.name as unit_name')
+            ->join('units', 'units.id = assets.unit_id', 'left')
+            ->where('assets.location_id', $id)
+            ->orderBy('assets.name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $location['units']  = $units;
+        $location['assets'] = $assets;
+
+        return $this->respondAjax($location);
     }
 
     public function create()
     {
-        return view('locations/create', [
-            'title' => 'Tambah Lokasi',
-        ]);
+        // Form create berada di modal pada halaman index.
+        return redirect()->to('/locations?create=1');
     }
 
     public function store()
     {
+        $isAjax = $this->request->isAJAX();
+
         $this->locationModel->insert([
             'name'        => $this->request->getPost('name'),
             'building'    => $this->request->getPost('building'),
@@ -51,39 +111,27 @@ class Location extends BaseController
             'is_active'   => $this->request->getPost('is_active') ? true : false,
         ]);
 
+        if ($isAjax) {
+            return $this->respondSuccess('Lokasi berhasil ditambahkan.', [
+                'id' => $this->locationModel->getInsertID(),
+            ]);
+        }
+
         return redirect()->to('/locations')
             ->with('success', 'Lokasi berhasil ditambahkan.');
     }
 
     public function edit($id)
     {
-        $location = $this->locationModel->find($id);
-
-        if (!$location) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
-
-        $units = $this->unitModel
-            ->where('is_active', 1)
-            ->orderBy('name', 'ASC')
-            ->findAll();
-
-        $selectedUnits = $this->unitLocationModel
-            ->where('location_id', $id)
-            ->findAll();
-
-        $selectedUnitIds = array_column($selectedUnits, 'unit_id');
-
-        return view('locations/edit', [
-            'title'          => 'Edit Lokasi',
-            'location'       => $location,
-            'units'          => $units,
-            'selectedUnitIds' => $selectedUnitIds,
-        ]);
+        // Form edit berada di modal pada halaman index. Keberadaan
+        // record divalidasi di data().
+        return redirect()->to('/locations?edit=' . (int) $id);
     }
 
     public function update($id)
     {
+        $isAjax = $this->request->isAJAX();
+
         $location = $this->locationModel->find($id);
 
         if (!$location) {
@@ -124,6 +172,9 @@ class Location extends BaseController
         $db->transComplete();
 
         if ($db->transStatus() === false) {
+            if ($isAjax) {
+                return $this->respondError('Lokasi gagal diperbarui.', 500);
+            }
 
             return redirect()
                 ->back()
@@ -132,6 +183,12 @@ class Location extends BaseController
                     'error',
                     'Lokasi gagal diperbarui.'
                 );
+        }
+
+        if ($isAjax) {
+            return $this->respondSuccess('Lokasi berhasil diperbarui.', [
+                'id' => (int) $id,
+            ]);
         }
 
         return redirect()
@@ -144,7 +201,25 @@ class Location extends BaseController
 
     public function delete($id)
     {
+        $isAjax = $this->request->isAJAX();
+
+        $location = $this->locationModel->find($id);
+
+        if (!$location) {
+            if ($isAjax) {
+                return $this->respondError('Lokasi tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         $this->locationModel->delete($id);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Lokasi berhasil dihapus.', [
+                'id' => (int) $id,
+            ]);
+        }
 
         return redirect()->to('/locations')
             ->with('success', 'Lokasi berhasil dihapus.');

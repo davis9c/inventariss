@@ -10,60 +10,38 @@
     <?php
         $assetVer = max(
             filemtime(FCPATH . 'js/inventaris.js') ?: 0,
-            filemtime(FCPATH . 'vendor/jquery.min.js') ?: 0,
-            filemtime(FCPATH . 'vendor/dataTables.min.js') ?: 0,
-            filemtime(FCPATH . 'vendor/bootstrap.bundle.min.js') ?: 0,
-            filemtime(FCPATH . 'vendor/sb-admin-2.min.css') ?: 0,
-            filemtime(FCPATH . 'vendor/sb-admin-2.min.js') ?: 0
+            filemtime(FCPATH . 'vendor/datatables.min.css') ?: 0,
+            filemtime(FCPATH . 'vendor/datatables.min.js') ?: 0
         ) ?: time();
     ?>
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"
+        integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 
-    <!-- Font Awesome -->
-    <link href="<?= base_url('vendor/all.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+        crossorigin="anonymous">
 
-    <!-- Bootstrap & SBAdmin2 -->
-    <link href="<?= base_url('vendor/bootstrap.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
-    <link href="<?= base_url('vendor/sb-admin-2.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
+    <!-- DataTables (Bootstrap 5 build) -->
+    <link href="<?= base_url('vendor/datatables.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
 
-    <!-- DataTables (after SBAdmin2) -->
-    <link href="<?= base_url('vendor/dataTables.bootstrap5.min.css') ?>?v=<?= $assetVer ?>" rel="stylesheet">
+    <!--
+        Scripts stay in <head> on purpose: every content view places its
+        inline <script> block before view('layout/footer'), so Bootstrap and
+        DataTables must already be evaluated by then.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
 
-    <!-- Fix DataTables BS5 specificity vs SBAdmin2 -->
-    <style>
-        /* Let SBAdmin2's .form-control handle search input styling */
-        div.dataTables_wrapper .dataTables_filter input {
-            width: 100%;
-            max-width: 280px;
-        }
-
-        /* Let SBAdmin2's .form-select handle length menu styling */
-        div.dataTables_wrapper .dataTables_length select {
-            width: auto;
-        }
-
-        /* Fix table margins — SBAdmin2 handles spacing via .card */
-        table.dataTable {
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-        }
-    </style>
-
-    <!-- jQuery & Bootstrap Bundle -->
-    <script src="<?= base_url('vendor/jquery.min.js') ?>?v=<?= $assetVer ?>"></script>
-    <script src="<?= base_url('vendor/bootstrap.bundle.min.js') ?>?v=<?= $assetVer ?>"></script>
-
-    <!-- DataTables -->
-    <script src="<?= base_url('vendor/dataTables.min.js') ?>?v=<?= $assetVer ?>"></script>
-    <script src="<?= base_url('vendor/dataTables.bootstrap5.min.js') ?>?v=<?= $assetVer ?>"></script>
+    <script src="<?= base_url('vendor/datatables.min.js') ?>?v=<?= $assetVer ?>"></script>
 
     <script>window.inventarisBaseUrl = '<?= base_url() ?>';</script>
     <script src="<?= base_url('js/inventaris.js') ?>?v=<?= $assetVer ?>"></script>
 </head>
 
-<body id="page-top">
+<body>
 
-<!-- Page Wrapper -->
-<div id="wrapper">
+<div class="d-flex flex-column min-vh-100">

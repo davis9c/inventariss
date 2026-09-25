@@ -1,5 +1,5 @@
 ﻿<?= view('layout/header', ['title' => 'Detail Barang Stok']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -162,6 +162,17 @@
 
     </div>
 
+    <!-- ===================================================== -->
+    <!-- GAMBAR (untuk identifikasi cepat)                     -->
+    <!-- ===================================================== -->
+
+    <?= view('partials/image_gallery', [
+        'images'      => $images,
+        'imageConfig' => $imageConfig,
+        'imageBase'   => 'stock-items',
+        'imageOwner'  => 'Barang stok',
+    ]) ?>
+
     <!-- RIWAYAT PERGERAKAN STOK -->
     <div class="card shadow-sm mb-4">
 
@@ -185,6 +196,7 @@
                             <th>Saldo</th>
                             <th>Lokasi</th>
                             <th>Keterangan</th>
+                            <th></th>
                         </tr>
                     </thead>
 
@@ -453,6 +465,17 @@
         return Inventaris.esc(row.from_location_name || '-');
     }
 
+    // Kolom aksi membuka halaman detail transaksi, tempat dokumen dan
+    // gambarnya dikelola. Tanpa ini, /stock-movements/{id} hampir tidak
+    // terjangkau dari antarmuka.
+    function movementActionHtml(row) {
+        if (!row.id) { return ''; }
+
+        return '<a href="' + Inventaris.esc(Inventaris.baseUrl
+                + 'stock-movements/' + row.id) + '"'
+            + ' class="btn btn-sm btn-outline-secondary">Detail</a>';
+    }
+
     var dt = Inventaris.datatable('#tabel-riwayat', {
         serverSide: false,
         data: history,
@@ -472,7 +495,8 @@
             } },
             { data: 'balance', render: function (data) { return '<strong>' + Inventaris.esc(data) + ' ' + Inventaris.esc(satuan) + '</strong>'; } },
             { data: null, render: function (data, type, row) { return locationHtml(row); } },
-            { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } }
+            { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } },
+            { data: null, orderable: false, searchable: false, render: function (data, type, row) { return movementActionHtml(row); } }
         ]
     });
 
@@ -553,5 +577,14 @@
     });
 })();
 </script>
+<?= view('partials/image_uploader', [
+    'assetId'              => (int) $item['id'],
+    'imageConfig'          => $imageConfig,
+    'imageBase'            => 'stock-items',
+    'imageOwner'           => 'Barang stok',
+    'imageFormId'          => 'uploadGambarItemForm',
+    'imageMaxOriginalBytes' => 15728640,
+]) ?>
+
 <?= view('layout/footer') ?>
 

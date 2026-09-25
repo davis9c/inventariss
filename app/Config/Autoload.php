@@ -90,7 +90,7 @@ class Autoload extends AutoloadConfig
      */
     public $helpers = [
         'auth',
-        'permission',
         'location',
+        'asset_document',
     ];
 }

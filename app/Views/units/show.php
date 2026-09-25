@@ -1,5 +1,5 @@
 <?= view('layout/header', ['title' => 'Detail Unit']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -17,7 +17,7 @@
                 Kembali
             </a>
 
-            <a href="<?= base_url('units/edit/' . $unit['id']) ?>"
+            <a href="<?= base_url('units?edit=' . (int) $unit['id']) ?>"
                 class="btn btn-warning">
                 Edit
             </a>

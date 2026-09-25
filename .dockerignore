@@ -34,6 +34,11 @@ writable/uploads/*
 .DS_Store
 Thumbs.db
 
+# Dependencies: image menjalankan `composer install --no-dev` sendiri.
+# Kalau vendor ikut ter-copy, folder vendor host menimpa hasil itu dan
+# dependency development (phpunit, php-parse) ikut terbawa ke production.
+vendor/
+
 # Node (if any)
 node_modules/
 

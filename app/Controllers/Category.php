@@ -15,30 +15,61 @@ class Category extends BaseController
 
     public function index()
     {
-        $data = [
-            'title'      => 'Kategori Barang',
-            'categories' => $this->categoryModel
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-        ];
+        // DataTables server-side. Tanpa ini, halaman harus menyertakan
+        // seluruh baris di HTML dan tidak punya endpoint untuk
+        // dt.ajax.reload().
+        if ($this->request->getGet('format') === 'json') {
+            return $this->respondAjax($this->datatableResponse(
+                'categories',
+                static fn ($b) => $b->select('categories.*'),
+                ['name', 'description'],
+                [0 => 'name', 1 => 'description', 2 => 'is_active'],
+                'name'
+            ));
+        }
 
-        return view('categories/index', $data);
+        return view('categories/index', [
+            'title' => 'Kategori Barang',
+        ]);
+    }
+
+    /**
+     * Satu kategori sebagai JSON, untuk mengisi modal edit dari ?edit=<id>.
+     */
+    public function data($id)
+    {
+        $category = $this->categoryModel->find($id);
+
+        if (!$category) {
+            return $this->respondError('Kategori tidak ditemukan.', 404);
+        }
+
+        return $this->respondAjax($category);
     }
 
     public function create()
     {
-        return view('categories/create', [
-            'title' => 'Tambah Kategori',
-        ]);
+        // Halaman create sudah tidak ada; form-nya berada di modal pada
+        // halaman index. Route ini dipertahankan agar tautan lama /
+        // bookmark tetap bekerja.
+        return redirect()->to('/categories?create=1');
     }
 
     public function store()
     {
+        $isAjax = $this->request->isAJAX();
+
         $this->categoryModel->insert([
             'name'        => $this->request->getPost('name'),
             'description' => $this->request->getPost('description'),
             'is_active'   => $this->request->getPost('is_active') ? true : false,
         ]);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Kategori berhasil ditambahkan.', [
+                'id' => $this->categoryModel->getInsertID(),
+            ]);
+        }
 
         return redirect()->to('/categories')
             ->with('success', 'Kategori berhasil ditambahkan.');
@@ -46,25 +77,37 @@ class Category extends BaseController
 
     public function edit($id)
     {
-        $category = $this->categoryModel->find($id);
-
-        if (!$category) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
-
-        return view('categories/edit', [
-            'title'    => 'Edit Kategori',
-            'category' => $category,
-        ]);
+        // Form edit berada di modal pada halaman index. Validasi
+        // keberadaan record tetap di data(), yang dipanggil halaman index
+        // saat membuka modal.
+        return redirect()->to('/categories?edit=' . (int) $id);
     }
 
     public function update($id)
     {
+        $isAjax = $this->request->isAJAX();
+
+        $category = $this->categoryModel->find($id);
+
+        if (!$category) {
+            if ($isAjax) {
+                return $this->respondError('Kategori tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         $this->categoryModel->update($id, [
             'name'        => $this->request->getPost('name'),
             'description' => $this->request->getPost('description'),
             'is_active'   => $this->request->getPost('is_active') ? true : false,
         ]);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Kategori berhasil diperbarui.', [
+                'id' => (int) $id,
+            ]);
+        }
 
         return redirect()->to('/categories')
             ->with('success', 'Kategori berhasil diperbarui.');
@@ -72,7 +115,25 @@ class Category extends BaseController
 
     public function delete($id)
     {
+        $isAjax = $this->request->isAJAX();
+
+        $category = $this->categoryModel->find($id);
+
+        if (!$category) {
+            if ($isAjax) {
+                return $this->respondError('Kategori tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         $this->categoryModel->delete($id);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Kategori berhasil dihapus.', [
+                'id' => (int) $id,
+            ]);
+        }
 
         return redirect()->to('/categories')
             ->with('success', 'Kategori berhasil dihapus.');

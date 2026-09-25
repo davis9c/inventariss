@@ -24,6 +24,77 @@ abstract class BaseController extends Controller
     }
 
     /**
+     * Apakah user yang sedang login Super Admin.
+     *
+     * Delegasi ke auth_helper::isSuperAdmin() supaya hanya ada satu
+     * definisi. Jangan bandingkan nama role secara manual di
+     * controller/view.
+     */
+    protected function isSuperAdmin(): bool
+    {
+        return isSuperAdmin();
+    }
+
+    /**
+     * Tolak request bila user bukan Super Admin (fail-closed).
+     *
+     * Dipakai di dalam method, bukan hanya di route, supaya perubahan
+     * konfigurasi route tidak bisa diam-diam membuka celah otorisasi.
+     * Menyesuaikan dengan tipe request: JSON 403 untuk AJAX, redirect
+     * dengan flash message untuk HTML.
+     *
+     * @return ResponseInterface|null null bila user Super Admin (lolos)
+     */
+    protected function requireSuperAdmin(string $message = 'Hanya Super Admin yang dapat melakukan tindakan ini.'): ?ResponseInterface
+    {
+        if ($this->isSuperAdmin()) {
+            return null;
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->respondError($message, 403);
+        }
+
+        return redirect()
+            ->back()
+            ->with('error', $message);
+    }
+
+    /**
+     * Level privilege tertinggi yang dimiliki user yang sedang login.
+     *
+     * Level kecil = privilege tinggi (Super Admin = 1). Dipakai untuk
+     * membatasi role mana yang boleh diberikan ke user lain: hanya role
+     * dengan level lebih besar (privilege lebih rendah).
+     *
+     * Kalau user tidak punya role sama sekali, dikembalikan level
+     * tertinggi yang ada — supaya user tanpa role tidak bisa
+     * memberikan role apa pun.
+     */
+    protected function currentRoleLevel(): int
+    {
+        $roleModel = new \App\Models\RoleModel();
+
+        $rows = $roleModel->select('level')->whereIn('name', session()->get('roles') ?? [])->findAll();
+
+        $min = null;
+        foreach ($rows as $row) {
+            $level = (int) ($row['level'] ?? 1);
+            $min = $min === null ? $level : min($min, $level);
+        }
+
+        if ($min !== null) {
+            return $min;
+        }
+
+        // User tanpa role: pakai level tertinggi yang ada supaya dia
+        // tidak bisa memberikan role apa pun.
+        $max = (int) db_connect()->table('roles')->selectMax('level')->get()->getRow('max');
+
+        return $max > 0 ? $max : 1;
+    }
+
+    /**
      * Kirim response JSON (umum dipakai untuk request AJAX).
      */
     protected function respondAjax($data = null, int $status = 200): ResponseInterface
@@ -132,9 +203,14 @@ abstract class BaseController extends Controller
 
         $dataBuilder = $newBuilder();
         $applySearch($dataBuilder);
-        $dataBuilder
-            ->orderBy($sortColumn, $sortDir)
-            ->limit($length, $start);
+        $dataBuilder->orderBy($sortColumn, $sortDir);
+
+        // DataTables mengirim length=-1 untuk opsi "Tampilkan semua".
+        // LIMIT -1 tidak valid di MySQL, jadi dalam kasus itu lewati
+        // limit altogether dan kirim seluruh baris yang cocok.
+        if ($length >= 0) {
+            $dataBuilder->limit($length, $start);
+        }
 
         $rows = $dataBuilder->get()->getResultArray();
 

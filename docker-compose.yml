@@ -13,6 +13,27 @@ services:
       - app-writable:/var/www/html/writable
     environment:
       - CI_ENVIRONMENT=production
+      # Konfigurasi database KHUSUS container. Tanpa ini, aplikasi memakai
+      # .env dari host (yang di-bind-mount ke /var/www/html) dan bukan DB
+      # dev di luar Docker -- sehingga service `db` di bawah tidak pernah
+      # dipakai.
+      #
+      # Nama variabelnya TIDAK mengandung titik, itu disengaja. Docker
+      # membuang nama environment variable bertitik, sementara hanya bentuk
+      # titik yang dibaca CodeIgniter lebih dulu. Nilai di sini dipetakan ke
+      # $_ENV oleh docker/container-env.php yang dipasang sebagai
+      # auto_prepend_file: file itu berjalan sebelum .env dibaca, dan CodeIgniter
+      # hanya menulis ke $_ENV kalau nilainya masih kosong.
+      #
+      # APP_BASEURL dan UG_* opsional: biarkan kosong untuk memakai nilai
+      # dari .env host.
+      - DB_HOST=db
+      - DB_NAME=inventaris
+      - DB_USER=inventaris
+      - DB_PASS=inventaris_secret
+      - APP_BASEURL=${app_baseURL:-http://localhost:8092/}
+      - UG_URL=${usergate_url:-}
+      - UG_API_KEY=${usergate_api_key:-}
     depends_on:
       db:
         condition: service_healthy

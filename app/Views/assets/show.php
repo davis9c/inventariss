@@ -1,5 +1,5 @@
 ﻿<?= view('layout/header', ['title' => 'Detail Barang']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -198,6 +198,29 @@
 
 
     <!-- ===================================================== -->
+    <!-- GAMBAR (untuk identifikasi cepat)                     -->
+    <!-- ===================================================== -->
+
+    <?= view('partials/image_gallery', [
+        'images'      => $images,
+        'imageConfig' => $imageConfig,
+        'imageBase'   => 'assets',
+        'imageOwner'  => 'Barang',
+    ]) ?>
+
+
+    <!-- ===================================================== -->
+    <!-- DOKUMEN (garansi, pembelian, sertifikat)               -->
+    <!-- ===================================================== -->
+
+    <?= view('partials/document_list', [
+        'documents'      => $documents,
+        'documentConfig' => $documentConfig,
+        'documentBase'   => 'assets',
+        'documentOwner'  => 'Barang',
+    ]) ?>
+
+    <!-- ===================================================== -->
     <!-- RIWAYAT PERGERAKAN -->
     <!-- ===================================================== -->
 
@@ -231,6 +254,7 @@
                             <th>Ke Lokasi</th>
                             <th>Keterangan</th>
                             <th>User</th>
+                            <th></th>
                         </tr>
                     </thead>
 
@@ -382,6 +406,14 @@
         </div>
     </div>
 </div>
+
+<?= view('partials/document_uploader', [
+    'documentConfig'  => $documentConfig,
+    'documentBase'    => 'assets',
+    'documentOwner'   => 'Barang',
+    'documentOwnerId' => (int) $asset['id'],
+    'documentFormId'  => 'uploadDokumenAssetForm',
+]) ?>
 
 <!-- ===================================================== -->
 <!-- MODAL MUTASI -->
@@ -572,6 +604,18 @@
         dtPergerakan.row.add(row).draw(false);
     }
 
+    // ── Riwayat pergerakan ───────────────────────────────────
+    // Kolom aksi membuka halaman detail transaksi, tempat dokumen dan
+    // gambarnya dikelola. Tanpa ini, /stock-movements/{id} hampir tidak
+    // terjangkau dari antarmuka.
+    function movementActionHtml(row) {
+        if (!row.id) { return ''; }
+
+        return '<a href="' + Inventaris.esc(Inventaris.baseUrl
+                + 'stock-movements/' + row.id) + '"'
+            + ' class="btn btn-sm btn-outline-secondary">Detail</a>';
+    }
+
     var dtPergerakan = Inventaris.datatable('#tabel-pergerakan', {
         serverSide: false,
         data: movements,
@@ -581,7 +625,8 @@
             { data: 'from_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
             { data: 'to_location_name', render: function (data) { return Inventaris.esc(data || '-'); } },
             { data: null, render: function (data, type, row) { return Inventaris.esc(row.reason || row.notes || '-'); } },
-            { data: 'created_by_name', render: function (data) { return Inventaris.esc(data || '-'); } }
+            { data: 'created_by_name', render: function (data) { return Inventaris.esc(data || '-'); } },
+            { data: null, orderable: false, searchable: false, render: function (data, type, row) { return movementActionHtml(row); } }
         ]
     });
 
@@ -694,5 +739,14 @@
     });
 })();
 </script>
+<?= view('partials/image_uploader', [
+    'assetId'             => (int) $asset['id'],
+    'imageConfig'         => $imageConfig,
+    'imageBase'           => 'assets',
+    'imageOwner'          => 'Barang',
+    'imageFormId'         => 'uploadGambarAssetForm',
+    'imageMaxOriginalBytes' => 15728640,
+]) ?>
+
 <?= view('layout/footer') ?>
 

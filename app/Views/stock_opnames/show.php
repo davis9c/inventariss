@@ -1,5 +1,5 @@
 ﻿<?= view('layout/header', ['title' => 'Detail Stock Opname']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 

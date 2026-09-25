@@ -1,5 +1,5 @@
 <?= view('layout/header', ['title' => 'Detail User']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -89,7 +89,7 @@
                 Kembali
             </a>
 
-            <a href="<?= base_url('users/edit/' . $user['id']) ?>"
+            <a href="<?= base_url('users?edit=' . (int) $user['id']) ?>"
                 class="btn btn-primary">
                 Edit User
             </a>

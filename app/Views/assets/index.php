@@ -1,5 +1,5 @@
 ﻿<?= view('layout/header', ['title' => 'Barang / Aset']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -280,15 +280,33 @@
     function actionHtml(row) {
         var detailUrl = Inventaris.baseUrl + 'assets/' + row.id;
         var buttons =
-            '<a href="' + detailUrl + '" class="btn btn-sm btn-info">Detail</a> ' +
+            '<a href="' + detailUrl + '" class="btn btn-sm btn-outline-primary">Detail</a> ' +
             '<button type="button" class="btn btn-sm btn-warning btn-edit-asset" data-id="' + row.id + '">Edit</button> ' +
             '<button type="button" class="btn btn-sm btn-danger btn-delete-asset" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '">Hapus</button>';
         return '<div class="text-nowrap">' + buttons + '</div>';
     }
 
+    // Kolom foto: id gambar pertama diambil di server sebagai image_id.
+    // Sengaja orderable:false supaya tidak mengurutkan berdasarkan kolom
+    // yang tidak ada di tabel assets.
+    function thumbHtml(row) {
+        if (!row.image_id) {
+            return '<span class="text-muted small">-</span>';
+        }
+
+        // Hanya width yang dibatasi, tanpa height dan tanpa object-fit:
+        // Bootstrap tidak punya utility object-fit, dan aspect ratio asli
+        // lebih baik daripada gambar yang ditekuk jadi kotak.
+        return '<img src="' + Inventaris.esc(Inventaris.baseUrl
+                + 'assets/images/' + row.image_id) + '"'
+            + ' class="img-thumbnail rounded" width="48"'
+            + ' alt="" loading="lazy">';
+    }
+
     var dt = Inventaris.datatable('#tabel-asset', {
         url: Inventaris.baseUrl + 'assets?format=json',
         columns: [
+            { data: 'image_id', orderable: false, searchable: false, render: function (data, type, row) { return thumbHtml(row); } },
             { data: 'asset_code' },
             { data: 'name' },
             { data: 'category_name' },
@@ -304,20 +322,48 @@
     var editForm = document.getElementById('editAssetForm');
     var editModal = null;
 
+    function fillEdit(row) {
+        editForm.action = Inventaris.baseUrl + 'assets/update/' + row.id;
+        ['asset_code', 'name', 'brand', 'model', 'serial_number', 'acquisition_year', 'acquisition_price', 'description'].forEach(function (name) {
+            editForm.elements[name].value = (row[name] === null || row[name] === undefined) ? '' : row[name];
+        });
+        ['category_id', 'unit_id', 'location_id', 'condition_status', 'asset_status'].forEach(function (name) {
+            if (editForm.elements[name] && editForm.elements[name].value) editForm.elements[name].value = row[name];
+        });
+        Inventaris.clearErrors(editForm);
+    }
+
+    function showEdit() {
+        if (!editModal) editModal = Inventaris.openModal('editAssetModal');
+        else editModal.show();
+    }
+
+    // Dipakai untuk ?edit=<id>, ketika baris tidak ada di tabel.
+    // show()?format=json juga menjaga agar aset di lokasi yang tidak
+    // boleh diakses tidak pernah terisi ke modal.
+    function openEditById(id) {
+        Inventaris.fetchJson(Inventaris.baseUrl + 'assets/' + encodeURIComponent(id) + '?format=json')
+            .then(function (row) {
+                if (!row || !row.id) {
+                    Inventaris.toast((row && row.message) || 'Barang tidak ditemukan.', 'danger');
+                    return;
+                }
+                fillEdit(row);
+                showEdit();
+            })
+            .catch(function () {
+                Inventaris.toast('Gagal memuat data barang.', 'danger');
+            });
+    }
+
     document.getElementById('tabel-asset').addEventListener('click', function (e) {
         var editBtn = e.target.closest('.btn-edit-asset');
         if (editBtn) {
             var row = dt.row(editBtn.closest('tr')).data();
-            if (!row) return;
-            editForm.action = Inventaris.baseUrl + 'assets/update/' + row.id;
-            ['asset_code', 'name', 'brand', 'model', 'serial_number', 'acquisition_year', 'acquisition_price', 'description'].forEach(function (name) {
-                editForm.elements[name].value = (row[name] === null || row[name] === undefined) ? '' : row[name];
-            });
-            ['category_id', 'unit_id', 'location_id', 'condition_status', 'asset_status'].forEach(function (name) {
-                if (editForm.elements[name] && editForm.elements[name].value) editForm.elements[name].value = row[name];
-            });
-            if (!editModal) editModal = Inventaris.openModal('editAssetModal');
-            else editModal.show();
+            if (row) {
+                fillEdit(row);
+                showEdit();
+            }
             return;
         }
 
@@ -366,6 +412,25 @@
             }
         });
     });
+
+    // Deep link dari /assets/create dan /assets/edit/<id> yang
+    // diarahkan ke /assets?create=1 dan /assets?edit=<id>.
+    var params = new URLSearchParams(window.location.search);
+    var wantCreate = params.get('create') === '1';
+    var wantEdit = params.get('edit');
+
+    if (wantCreate || wantEdit) {
+        window.history.replaceState({}, document.title, Inventaris.baseUrl + 'assets');
+    }
+
+    if (wantCreate) {
+        var createAssetForm = document.getElementById('createAssetForm');
+        createAssetForm.reset();
+        Inventaris.clearErrors(createAssetForm);
+        Inventaris.openModal('createAssetModal');
+    } else if (wantEdit) {
+        openEditById(wantEdit);
+    }
 })();
 </script>
 <?= view('layout/footer') ?>

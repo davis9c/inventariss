@@ -22,38 +22,36 @@ if (!function_exists('hasAnyRole')) {
 
 
 if (!function_exists('isSuperAdmin')) {
+    /**
+     * Super Admin = memegang role bernama 'Super Admin' ATAU role
+     * berlevel 1.
+     *
+     * Pengecekan nama adalah jalur cepat (tanpa query) dan tetap
+     * dipertahankan karena nama role adalah kunci otorisasi di seluruh
+     * aplikasi. Pengecekan level adalah defence in depth: nama role kini
+     * dijamin unik oleh roles.uniq_roles_name, tapi bila suatu saat ada
+     * jalur lain yang memasukkan nama ganda, role level 1 tetap diakui
+     * sehingga privilege tidak bisaditiru.
+     */
     function isSuperAdmin(): bool
     {
-        return hasRole('Super Admin');
-    }
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| Permission
-|--------------------------------------------------------------------------
-*/
-
-if (!function_exists('hasPermission')) {
-    function hasPermission(string $permission): bool
-    {
-        // Super Admin memiliki seluruh permission
-        if (isSuperAdmin()) {
+        if (hasRole('Super Admin')) {
             return true;
         }
 
-        $permissions = session()->get('permissions') ?? [];
+        $levelOne = new \App\Models\RoleModel();
 
-        return in_array($permission, $permissions, true);
+        foreach ($levelOne->select('name')->where('level', 1)->findAll() as $role) {
+            if (hasRole($role['name'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
-if (!function_exists('hasPermission')) {
-    function hasPermission(string $permission): bool
-    {
-        $permissions = session()->get('permissions') ?? [];
-
-        return in_array($permission, $permissions, true);
-    }
-}
+// Catatan: helper hasPermission() sengaja dihapus. Permission-nya berasal dari
+// modul "maintenance" yang tidak pernah dibangun, dan tabel permissions,
+// role_permissions, serta maintenances semuanya sudah di-drop. Otorisasi
+// saat ini murni berbasis role lewat RoleFilter.

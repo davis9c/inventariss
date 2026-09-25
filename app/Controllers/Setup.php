@@ -75,7 +75,7 @@ class Setup extends BaseController
             }
         }
 
-        // ─── Ambil role + permission ─────────────────────────
+        // ─── Ambil role ──────────────────────────────────────
         $userRoleModel = new \App\Models\UserRoleModel();
         $roles = $userRoleModel
             ->select('roles.id, roles.name')
@@ -85,15 +85,6 @@ class Setup extends BaseController
 
         $roleIds   = array_column($roles, 'id');
         $roleNames = array_column($roles, 'name');
-
-        $rolePermissionModel = new \App\Models\RolePermissionModel();
-        $permissions = $rolePermissionModel
-            ->select('permissions.name')
-            ->join('permissions', 'permissions.id = role_permissions.permission_id')
-            ->whereIn('role_permissions.role_id', $roleIds)
-            ->findAll();
-
-        $permissionNames = array_column($permissions, 'name');
 
         // Lokasi
         $userLocationModel = new \App\Models\UserLocationModel();
@@ -110,7 +101,6 @@ class Setup extends BaseController
             'location_ids'   => $locationIds,
             'role_ids'       => $roleIds,
             'roles'          => $roleNames,
-            'permissions'    => $permissionNames,
             'isLoggedIn'     => true,
             'access_token'   => $tokenData['access_token'],
             'refresh_token'  => $tokenData['refresh_token'],

@@ -1,29 +1,23 @@
-        </div>
-        <!-- End Page Content -->
-    </div>
-    <!-- End Main Content -->
+    </main>
+    <!-- End Page Content -->
 
     <!-- Footer -->
-    <footer class="sticky-footer bg-white">
-        <div class="container my-auto">
-            <div class="copyright text-center my-auto">
-                <span>Copyright &copy; Inventaris <?= date('Y') ?></span>
-            </div>
+    <footer class="border-top bg-body-tertiary py-3">
+        <div class="container-fluid text-center text-body-secondary small">
+            Copyright &copy; Inventaris <?= date('Y') ?>
         </div>
     </footer>
-</div>
-<!-- End Content Wrapper -->
 
 </div>
-<!-- End Page Wrapper -->
+<!-- End Page shell -->
 
 <!-- Logout Modal -->
 <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Yakin ingin logout?</h5>
-                <button type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">Pilih "Logout" jika ingin mengakhiri sesi.</div>
             <div class="modal-footer">
@@ -40,7 +34,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="confirmModalTitle">Konfirmasi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body" id="confirmModalMessage"></div>
             <div class="modal-footer">
@@ -53,9 +47,6 @@
 
 <!-- Toast Container -->
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
-
-<!-- SBAdmin2 JS -->
-<script src="<?= base_url('vendor/sb-admin-2.min.js') ?>"></script>
 
 </body>
 </html>

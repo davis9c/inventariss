@@ -291,6 +291,121 @@
         return params;
     }
 
+    /**
+     * Perkecil satu gambar di browser sebelum diunggah.
+     *
+     * Dilakukan di klien supaya tidak perlu GD di server: GALAT di dev
+     * (php -S tidak punya GD) tapi ADA di Docker, sehingga thumbnail server
+     * akan berperilaku berbeda antar environment. Di sini hasilnya sama
+     * di mana pun.
+     *
+     * Hasilnya selalu JPEG. PNG yang punya channel transparan akan kehilangan
+     * transparansinya, jadi kanvasnya lebih dulu diisi putih -- kalau tidak,
+     * area transparan jadi hitam setelah dikonversi.
+     *
+     * @param {File}   file      berkas asli dari <input type="file">
+     * @param {object} opts      { maxDimension, quality, maxBytes }
+     * @returns {Promise<{file: File, width: number, height: number, skipped: boolean}>}
+     */
+    function resizeImage(file, opts) {
+        opts = opts || {};
+
+        var maxDim = opts.maxDimension || 1280;
+        var quality = typeof opts.quality === 'number' ? opts.quality : 0.82;
+        var maxBytes = opts.maxBytes || 2097152;
+
+        return new Promise(function (resolve, reject) {
+            // Berkas yang sudah kecil dan tidak perlu dikecilkan diteruskan
+            // apa adanya: re-encode JPEG di sini lossy sekali lagi tanpa
+            // alasan yang baik.
+            if (file.size <= maxBytes && file.type === 'image/jpeg') {
+                var probe = new Image();
+
+                probe.onload = function () {
+                    if (probe.width <= maxDim && probe.height <= maxDim) {
+                        resolve({ file: file, width: probe.width, height: probe.height, skipped: true });
+                    } else {
+                        draw(probe, probe.width, probe.height, resolve, reject);
+                    }
+                };
+                probe.onerror = function () { reject(new Error('Gambar tidak bisa dibaca.')); };
+                probe.src = URL.createObjectURL(file);
+                return;
+            }
+
+            var img = new Image();
+
+            img.onload = function () {
+                draw(img, img.width, img.height, resolve, reject);
+            };
+            img.onerror = function () { reject(new Error('Gambar tidak bisa dibaca.')); };
+            img.src = URL.createObjectURL(file);
+        });
+
+        function draw(img, w, h, resolve, reject) {
+            var scale = Math.min(1, maxDim / Math.max(w || 1, h || 1));
+            var width = Math.max(1, Math.round(w * scale));
+            var height = Math.max(1, Math.round(h * scale));
+
+            var canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            var ctx = canvas.getContext('2d');
+
+            // Latar putih dulu, supaya transparan tidak jadi hitam.
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            if (typeof canvas.toBlob !== 'function') {
+                reject(new Error('Browser tidak mendukung canvas.'));
+                return;
+            }
+
+            canvas.toBlob(function (blob) {
+                if (!blob) {
+                    reject(new Error('Gagal memproses gambar.'));
+                    return;
+                }
+
+                if (blob.size > maxBytes) {
+                    reject(new Error(
+                        'Ukuran gambar masih ' + Math.round(blob.size / 1024)
+                        + ' KB setelah dikecilkan. Silakan pilih gambar yang lebih kecil.'
+                    ));
+                    return;
+                }
+
+                // Namanya tetap .jpg karena hasilnya memang JPEG; nama asli
+                // sudah tidak relevan karena server selalu memberi nama acak.
+                var base = file.name.replace(/\.[^.]+$/, '') || 'gambar';
+                var out = new File([blob], base + '.jpg', {
+                    type: 'image/jpeg',
+                    lastModified: file.lastModified || Date.now()
+                });
+
+                resolve({ file: out, width: width, height: height, skipped: false });
+            }, 'image/jpeg', quality);
+        }
+    }
+
+    /**
+     * Batasi jumlah berkas pada <input type="file">.
+     *
+     * Dipanggil saat ada yang munculkan maksimum 5 gambar atau dokumen --
+     * validasi di server tetap ada, ini cuma supaya pilihannya tidak sia-sia.
+     */
+    function limitFileCount(input, max) {
+        if (!input || !max) return;
+
+        input.addEventListener('change', function () {
+            if (this.multiple && this.files && this.files.length > max) {
+                this.value = '';
+            }
+        });
+    }
+
     window.Inventaris = {
         baseUrl: baseUrl,
         esc: escapeHtml,
@@ -304,6 +419,8 @@
         bindFilter: bindFilter,
         filterParams: filterParams,
         clearErrors: clearErrors,
-        showErrors: showErrors
+        showErrors: showErrors,
+        resizeImage: resizeImage,
+        limitFileCount: limitFileCount
     };
 })();

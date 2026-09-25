@@ -63,54 +63,47 @@ class StockOpname extends BaseController
             ));
         }
 
-        $opnames = $this->opnameModel
-            ->select('
-                stock_opnames.*,
-                locations.name as location_name,
-                locations.building,
-                locations.room
-            ')
-            ->join(
-                'locations',
-                'locations.id = stock_opnames.location_id',
-                'left'
-            )
-            ->orderBy('stock_opnames.opname_date', 'DESC')
-            ->findAll();
+        // Halaman tidak lagi menyertakan baris opname (DataTables
+        // server-side), jadi tidak perlu findAll() di sini.
+        $locationBuilder = $this->locationModel
+            ->where('is_active', 1)
+            ->orderBy('name', 'ASC');
+
+        // Sama seperti halaman create lama: user dengan pembatasan
+        // lokasi hanya boleh memilih lokasi yang menjadi haknya.
+        if (has_location_restriction()) {
+            $locationBuilder->whereIn('id', user_location_ids());
+        }
 
         return view('stock_opnames/index', [
-            'title'   => 'Stock Opname',
-            'opnames' => $opnames,
+            'title' => 'Stock Opname',
+            // Dipakai oleh select lokasi di modal create.
+            'locations' => $locationBuilder->findAll(),
         ]);
     }
 
     public function create()
     {
-        $locationBuilder = $this->locationModel
-            ->where('is_active', 1)
-            ->orderBy('name', 'ASC');
-
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
-
-        return view('stock_opnames/create', [
-            'title' => 'Buat Stock Opname',
-
-            'locations' => $locationBuilder
-                ->findAll(),
-        ]);
+        // Form create berada di modal pada halaman index. Setelah dibuat,
+        // alur opname berlanjut di halaman detail.
+        return redirect()->to('/stock-opnames?create=1');
     }
 
     public function store()
     {
+        $isAjax = $this->request->isAJAX();
+
         $locationId = $this->request->getPost('location_id');
 
         // Jika memilih lokasi tertentu, cek akses user
         if ($locationId && !can_access_location($locationId)) {
+            if ($isAjax) {
+                return $this->respondError(
+                    'Anda tidak memiliki akses ke lokasi tersebut.',
+                    403
+                );
+            }
+
             return redirect()
                 ->back()
                 ->withInput()
@@ -185,6 +178,13 @@ class StockOpname extends BaseController
                 'stock_item_id'   => $stockItem['id'],
                 'system_qty'      => $stockItem['quantity'],
                 'physical_qty'    => null,
+            ]);
+        }
+
+        if ($isAjax) {
+            return $this->respondSuccess('Stock opname berhasil dibuat.', [
+                'id'   => $opnameId,
+                'code' => $code,
             ]);
         }
 

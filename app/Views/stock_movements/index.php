@@ -1,5 +1,5 @@
 ﻿<?= view('layout/header', ['title' => 'Stock Movement']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -39,8 +39,6 @@
                     <label class="form-label">Jenis Transaksi</label>
                     <select name="transaction_type[]"
                             data-filter
-                            multiple
-                            size="4"
                             class="form-select">
                         <?php
                         $allTypes = [
@@ -138,9 +136,83 @@
 
 
 
+<div class="modal fade" id="detailMovementModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Transaksi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Kode Transaksi</label>
+                        <div class="fw-semibold" id="detailMovementCode">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Tanggal</label>
+                        <div id="detailMovementDate">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Tipe</label>
+                        <div id="detailMovementType">-</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Jenis Barang</label>
+                        <div id="detailMovementItemType">-</div>
+                    </div>
+                    <div class="col-md-8" id="detailMovementAssetWrap">
+                        <label class="form-label text-muted small">Aset</label>
+                        <div id="detailMovementAsset">-</div>
+                    </div>
+                    <div class="col-md-8" id="detailMovementItemWrap" hidden>
+                        <label class="form-label text-muted small">Barang Stok</label>
+                        <div id="detailMovementItem">-</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Quantity</label>
+                        <div id="detailMovementQty">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Dari Lokasi</label>
+                        <div id="detailMovementFrom">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Ke Lokasi</label>
+                        <div id="detailMovementTo">-</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Alasan</label>
+                        <div id="detailMovementReason">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Catatan</label>
+                        <div id="detailMovementNotes">-</div>
+                    </div>
+
+                    <div class="col-12">
+                        <hr>
+                        <p class="mb-0 text-muted small">
+                            Dibuat: <span id="detailMovementCreatedAt">-</span>
+                            <span id="detailMovementCreatedBy"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     'use strict';
+    var baseUrl = Inventaris.baseUrl;
 
     function typeBadge(value) {
         var map = {
@@ -158,7 +230,7 @@
     }
 
     var dt = Inventaris.datatable('#tabel-movement', {
-        url: Inventaris.baseUrl + 'stock-movements?format=json',
+        url: baseUrl + 'stock-movements?format=json',
         data: function (d) {
             Object.assign(d, Inventaris.filterParams('filterForm'));
         },
@@ -198,13 +270,71 @@
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {
-                    return '<a href="' + Inventaris.baseUrl + 'stock-movements/' + row.id + '" class="btn btn-sm btn-info">Detail</a>';
+                    return '<button type="button" class="btn btn-sm btn-outline-primary btn-detail" data-id="' + row.id + '">Detail</button>';
                 }
             }
         ]
     });
 
     Inventaris.bindFilter('filterForm', dt);
+
+    // ── Modal detail ────────────────────────────────────────
+    // Tidak ada ?detail=<id>: ID tidak pernah masuk URL, jadi tidak
+    // muncul di address bar maupun riwayat browser.
+    var detailModal = null;
+
+    function fillDetail(row) {
+        document.getElementById('detailMovementCode').textContent = row.transaction_code || '-';
+        document.getElementById('detailMovementDate').textContent = row.transaction_date || '-';
+        document.getElementById('detailMovementType').innerHTML = typeBadge(row.transaction_type);
+        document.getElementById('detailMovementItemType').textContent = row.item_type || '-';
+
+        // Tampilkan blok aset ATAU barang stok, sesuai jenisnya.
+        var isStock = (row.item_type || '') === 'Stok';
+        document.getElementById('detailMovementAssetWrap').hidden = isStock;
+        document.getElementById('detailMovementItemWrap').hidden = !isStock;
+
+        if (isStock) {
+            document.getElementById('detailMovementItem').textContent =
+                (row.item_code || '-') + ' - ' + (row.item_name || '-') +
+                ' (' + (row.satuan || '-') + ')';
+        } else {
+            document.getElementById('detailMovementAsset').textContent =
+                (row.asset_code || '-') + ' - ' + (row.asset_name || '-');
+        }
+
+        var qty = row.quantity;
+        document.getElementById('detailMovementQty').textContent =
+            (qty === null || qty === undefined || qty === '') ? '-' : String(qty);
+        document.getElementById('detailMovementFrom').textContent = row.from_location_name || '-';
+        document.getElementById('detailMovementTo').textContent = row.to_location_name || '-';
+        document.getElementById('detailMovementReason').textContent = row.reason || '-';
+        document.getElementById('detailMovementNotes').textContent = row.notes || '-';
+        document.getElementById('detailMovementCreatedAt').textContent = row.created_at || '-';
+        document.getElementById('detailMovementCreatedBy').textContent =
+            row.created_by_name ? ' oleh ' + row.created_by_name : '';
+    }
+
+    function openDetailById(id) {
+        Inventaris.fetchJson(baseUrl + 'stock-movements/data/' + encodeURIComponent(id))
+            .then(function (row) {
+                if (!row || !row.id) {
+                    Inventaris.toast((row && row.message) || 'Transaksi tidak ditemukan.', 'danger');
+                    return;
+                }
+                fillDetail(row);
+                if (!detailModal) detailModal = Inventaris.openModal('detailMovementModal');
+                else detailModal.show();
+            })
+            .catch(function () {
+                Inventaris.toast('Gagal memuat data transaksi.', 'danger');
+            });
+    }
+
+    document.getElementById('tabel-movement').addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-detail');
+        if (btn) openDetailById(btn.getAttribute('data-id'));
+    });
 })();
 </script>
 <?= view('layout/footer') ?>

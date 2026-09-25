@@ -4,13 +4,26 @@ namespace App\Controllers;
 
 use App\Models\CategoryModel;
 use App\Models\InventoryTransactionModel;
+use App\Models\ItemImageModel;
 use App\Models\LocationModel;
 use App\Models\StockItemModel;
 use App\Models\UnitModel;
+use App\Traits\HandlesAttachments;
+use App\Traits\HandlesItemImages;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use Config\ItemImages;
 
 class StockItem extends BaseController
 {
+    // Enam endpoint gambar yang identik dengan milik Aset -- lihat
+    // HandlesItemImages. Yang berbeda hanya tabel induk dan nama barang.
+    use HandlesAttachments;
+    use HandlesItemImages;
+
+    protected string $imageItemType   = ItemImageModel::TYPE_STOCK_ITEM;
+    protected string $imageBasePath   = 'stock-items';
+    protected string $imageOwnerLabel = 'Barang stok';
+
     protected StockItemModel $itemModel;
     protected InventoryTransactionModel $transactionModel;
     protected CategoryModel $categoryModel;
@@ -26,6 +39,16 @@ class StockItem extends BaseController
         $this->locationModel    = new LocationModel();
     }
 
+    /**
+     * Dipakai trait HandlesItemImages untuk mencari induk lampirannya.
+     */
+    protected function findAttachmentOwner(int $id): ?array
+    {
+        $item = $this->itemModel->find($id);
+
+        return $item === null ? null : $item;
+    }
+
     public function index()
     {
         if ($this->request->getGet('format') === 'json') {
@@ -36,7 +59,11 @@ class StockItem extends BaseController
                         stock_items.*,
                         categories.name as category_name,
                         units.name as unit_name,
-                        locations.name as location_name
+                        locations.name as location_name,
+                        (SELECT ii.id FROM item_images ii
+                          WHERE ii.item_type = \'stock_item\'
+                            AND ii.item_id = stock_items.id
+                          ORDER BY ii.id ASC LIMIT 1) AS image_id
                     ')
                         ->join(
                             'categories',
@@ -140,30 +167,8 @@ class StockItem extends BaseController
 
     public function create()
     {
-        $locationBuilder = $this->locationModel
-            ->where('is_active', 1);
-
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
-
-        return view('stock_items/create', [
-            'title'      => 'Tambah Barang Stok',
-            'categories' => $this->categoryModel
-                ->where('is_active', 1)
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-            'units' => $this->unitModel
-                ->where('is_active', 1)
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-            'locations' => $locationBuilder
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-        ]);
+        // Form create berada di modal pada halaman index.
+        return redirect()->to('/stock-items?create=1');
     }
 
     public function store()
@@ -222,6 +227,9 @@ class StockItem extends BaseController
 
     public function edit($id)
     {
+        // Form edit berada di modal pada halaman index. Penjagaan akses
+        // lokasi TIDAK dihapus; show()?format=json menjaganya lagi saat
+        // modal diisi.
         $item = $this->itemModel->find($id);
 
         if (!$item) {
@@ -237,31 +245,7 @@ class StockItem extends BaseController
                 );
         }
 
-        $locationBuilder = $this->locationModel
-            ->where('is_active', 1);
-
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
-
-        return view('stock_items/edit', [
-            'title'      => 'Edit Barang Stok',
-            'item'       => $item,
-            'categories' => $this->categoryModel
-                ->where('is_active', 1)
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-            'units' => $this->unitModel
-                ->where('is_active', 1)
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-            'locations' => $locationBuilder
-                ->orderBy('name', 'ASC')
-                ->findAll(),
-        ]);
+        return redirect()->to('/stock-items?edit=' . (int) $id);
     }
 
     public function update($id)
@@ -366,7 +350,24 @@ class StockItem extends BaseController
             ->find($id);
 
         if (!$item) {
+            if ($this->request->getGet('format') === 'json') {
+                return $this->respondError('Barang stok tidak ditemukan.', 404);
+            }
+
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        // Satu barang stok sebagai JSON, untuk mengisi modal edit dari
+        // ?edit=<id>. Penjagaan akses lokasi tetap berlaku.
+        if ($this->request->getGet('format') === 'json') {
+            if (!can_access_location($item['location_id'])) {
+                return $this->respondError(
+                    'Anda tidak memiliki akses ke barang stok tersebut.',
+                    403
+                );
+            }
+
+            return $this->respondAjax($item);
         }
 
         if (!can_access_location($item['location_id'])) {
@@ -438,9 +439,14 @@ class StockItem extends BaseController
         }
 
         return view('stock_items/show', [
-            'title'      => 'Detail Barang Stok',
-            'item'       => $item,
-            'history'    => $history,
+            'title'       => 'Detail Barang Stok',
+            'item'        => $item,
+            'history'     => $history,
+            'images'      => (new ItemImageModel())->forItem(
+                ItemImageModel::TYPE_STOCK_ITEM,
+                (int) $id
+            ),
+            'imageConfig' => new ItemImages(),
             'categories' => $this->categoryModel
                 ->where('is_active', 1)
                 ->orderBy('name', 'ASC')

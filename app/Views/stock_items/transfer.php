@@ -1,5 +1,5 @@
 <?= view('layout/header', ['title' => 'Pindah Stok']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 

@@ -1,5 +1,5 @@
 <?= view('layout/header', ['title' => 'Dashboard']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 

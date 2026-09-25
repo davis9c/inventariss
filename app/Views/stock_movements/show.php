@@ -1,5 +1,5 @@
 <?= view('layout/header', ['title' => 'Detail Transaksi']) ?>
-<?= view('layout/sidebar') ?>
+<?= view('layout/navbar') ?>
 
 <div class="mb-4">
 
@@ -168,6 +168,41 @@
         </div>
 
     </div>
+
+    <!-- ===================================================== -->
+    <!-- LAMPIRAN: dokumen dan gambar catatan pergerakan       -->
+    <!-- ===================================================== -->
+
+    <?= view('partials/image_gallery', [
+        'images'      => $images,
+        'imageConfig' => $imageConfig,
+        'imageBase'   => 'stock-movements',
+        'imageOwner'  => 'Catatan pergerakan',
+    ]) ?>
+
+    <?= view('partials/document_list', [
+        'documents'      => $documents,
+        'documentConfig' => $documentConfig,
+        'documentBase'   => 'stock-movements',
+        'documentOwner'  => 'Catatan pergerakan',
+    ]) ?>
+
+    <?= view('partials/image_uploader', [
+        'assetId'              => (int) $transaction['id'],
+        'imageConfig'          => $imageConfig,
+        'imageBase'            => 'stock-movements',
+        'imageOwner'           => 'Catatan pergerakan',
+        'imageFormId'          => 'uploadGambarMovementForm',
+        'imageMaxOriginalBytes' => 15728640,
+    ]) ?>
+
+    <?= view('partials/document_uploader', [
+        'documentConfig'  => $documentConfig,
+        'documentBase'    => 'stock-movements',
+        'documentOwner'   => 'Catatan pergerakan',
+        'documentOwnerId' => (int) $transaction['id'],
+        'documentFormId'  => 'uploadDokumenMovementForm',
+    ]) ?>
 
 </div>
 

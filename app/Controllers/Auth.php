@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Models\UserModel;
 use App\Models\UserRoleModel;
 use App\Models\UserLocationModel;
-use App\Models\RolePermissionModel;
 use App\Libraries\UserGateLibrary;
 
 class Auth extends BaseController
@@ -68,7 +67,7 @@ class Auth extends BaseController
             $this->ensureSuperAdminRole($localUser['id'], $userRoleModel);
         }
 
-        // ─── Ambil role + permission lokal ───────────────────
+        // ─── Ambil role lokal ────────────────────────────────
         $roles = $userRoleModel
             ->select('roles.id, roles.name')
             ->join('roles', 'roles.id = user_roles.role_id')
@@ -77,15 +76,6 @@ class Auth extends BaseController
 
         $roleIds   = array_column($roles, 'id');
         $roleNames = array_column($roles, 'name');
-
-        $rolePermissionModel = new RolePermissionModel();
-        $permissions = $rolePermissionModel
-            ->select('permissions.name')
-            ->join('permissions', 'permissions.id = role_permissions.permission_id')
-            ->whereIn('role_permissions.role_id', $roleIds)
-            ->findAll();
-
-        $permissionNames = array_column($permissions, 'name');
 
         // Lokasi user
         $userLocationModel = new UserLocationModel();
@@ -102,7 +92,6 @@ class Auth extends BaseController
             'location_ids'   => $locationIds,
             'role_ids'       => $roleIds,
             'roles'          => $roleNames,
-            'permissions'    => $permissionNames,
             'isLoggedIn'     => true,
             'access_token'   => $tokenData['access_token'],
             'refresh_token'  => $tokenData['refresh_token'],
