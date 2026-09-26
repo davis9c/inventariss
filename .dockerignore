@@ -18,6 +18,9 @@ preload.php
 
 # Tests
 tests/
+# Output PHPUnit (testdox, junit, clover, cache). Hanya ada di mesin yang
+# menjalankan test; tidak pernah dipakai aplikasi dan tidak perlu masuk image.
+build/
 
 # Environment (will be mounted or copied)
 .env

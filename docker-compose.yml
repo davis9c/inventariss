@@ -28,7 +28,7 @@ services:
       # host:port di dalam container. Ganti angka pertama kalau live server
       # memakai port lain, atau dibiarkan seperti ini di belakang reverse
       # proxy.
-      - "8092:80"
+      - "${APP_PORT:-8082}:80"
     volumes:
       # Kode dan .env mengikuti host, supaya tidak perlu rebuild setiap ada
       # perubahan dan .env tetap jadi satu sumber kebenaran.
