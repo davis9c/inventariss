@@ -23,24 +23,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: inventaris-app
-    restart: unless-stopped
     ports:
       # host:port di dalam container. Ganti angka pertama kalau live server
       # memakai port lain, atau dibiarkan seperti ini di belakang reverse
       # proxy.
       - "${APP_PORT:-8082}:80"
-    volumes:
-      # Kode dan .env mengikuti host, supaya tidak perlu rebuild setiap ada
-      # perubahan dan .env tetap jadi satu sumber kebenaran.
-      - .:/var/www/html
-      # writable TIDAK ikut bind-mount: session, log, dan berkas unggahan
-      # milik container, bukan host.
-      - app-writable:/var/www/html/writable
-    environment:
-      # Satu-satunya override, dan bisa tanpa mekanisme tambahan: PHP mengisi
-      # $_ENV dari process env sebelum CodeIgniter membaca .env, sehingga
-      # nilai di sini menang atas CI_ENVIRONMENT di .env.
-      - CI_ENVIRONMENT=production
-
-volumes:
-  app-writable:
