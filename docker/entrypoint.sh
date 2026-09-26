@@ -20,17 +20,28 @@
 
 set -e
 
-# Nama env var tanpa titik, karena Docker membuang nama bertitik.
-DB_HOST="$(php -r 'echo getenv("DB_HOST") ?: "db";' 2>/dev/null || echo db)"
+# Nama host database dibaca dari .env dengan loader yang sama seperti
+# aplikasi, supaya log menyebut server yang benar-benar dipakai.
+#
+# Compose tidak lagi punya service MySQL, jadi tidak ada lagi nama host
+# "db" yang bisa dijadikan default; default seperti itu akan menyesatkan
+# kalau .env menunjuk server lain.
+DB_HOST="$(php -r '
+require "/var/www/html/vendor/autoload.php";
+require "/var/www/html/vendor/codeigniter4/framework/system/Config/DotEnv.php";
+(new \CodeIgniter\Config\DotEnv("/var/www/html"))->load();
+echo $_ENV["database.default.hostname"] ?? "?";
+' 2>/dev/null || echo "?")"
 
-echo "[entrypoint] menunggu database di '${DB_HOST}' (maks 60 detik)"
+echo "[entrypoint] menunggu database '${DB_HOST}' (maks 60 detik)"
 
 i=0
 until php spark migrate:status >/dev/null 2>&1; do
     i=$((i + 1))
     if [ "$i" -ge 30 ]; then
-        echo "[entrypoint] PERINGATAN: database belum terjangkau setelah ${i} percobaan."
-        echo "[entrypoint] Melanjutkan tanpa migrate/seed -- cek konfigurasi database."
+        echo "[entrypoint] PERINGATAN: database '${DB_HOST}' belum terjangkau setelah ${i} percobaan."
+        echo "[entrypoint] Melanjutkan tanpa migrate/seed."
+        echo "[entrypoint] Periksa database.default.hostname / .database / .password di .env."
         break
     fi
     sleep 2

@@ -1,5 +1,18 @@
 services:
   # ─── Web Application ─────────────────────────────
+  #
+  # Database TIDAK ada di compose. Aplikasi memakai MySQL eksternal yang
+  # dikonfigurasi lewat .env (database.default.*). Service `db` yang
+  # sebelumnya ada di sini sudah dihapus; sekarang tidak ada lagi container
+  # MySQL, tidak ada volume db-data, dan tidak ada depends_on.
+  #
+  # Konsekuensi yang perlu diketahui: selama .env menunjuk dev_inventaris,
+  # container dan dev server BERBAGAI satu database. Entrypoint menjalankan
+  # migrate + seed setiap start -- keduanya idempoten, jadi tidak menghapus
+  # dan tidak mengalikan baris -- tapi perubahan dari salah satu akan
+  # terlihat di yang lain. Kalau ingin terpisah, cukup ubah
+  # database.default.database di .env (mis. ke db_am_inventaris); compose
+  # tidak perlu disentuh.
   app:
     build:
       context: .
@@ -13,59 +26,23 @@ services:
       - app-writable:/var/www/html/writable
     environment:
       - CI_ENVIRONMENT=production
-      # Konfigurasi database KHUSUS container. Tanpa ini, aplikasi memakai
-      # .env dari host (yang di-bind-mount ke /var/www/html) dan bukan DB
-      # dev di luar Docker -- sehingga service `db` di bawah tidak pernah
-      # dipakai.
+      # Override opsional. Kosongkan untuk memakai nilai dari .env host.
       #
       # Nama variabelnya TIDAK mengandung titik, itu disengaja. Docker
       # membuang nama environment variable bertitik, sementara hanya bentuk
       # titik yang dibaca CodeIgniter lebih dulu. Nilai di sini dipetakan ke
       # $_ENV oleh docker/container-env.php yang dipasang sebagai
-      # auto_prepend_file: file itu berjalan sebelum .env dibaca, dan CodeIgniter
-      # hanya menulis ke $_ENV kalau nilainya masih kosong.
+      # auto_prepend_file: file itu berjalan sebelum .env dibaca, dan
+      # CodeIgniter hanya menulis ke $_ENV kalau nilainya masih kosong.
       #
-      # APP_BASEURL dan UG_* opsional: biarkan kosong untuk memakai nilai
-      # dari .env host.
-      - DB_HOST=db
-      - DB_NAME=inventaris
-      - DB_USER=inventaris
-      - DB_PASS=inventaris_secret
+      # DB_HOST dan friends sengaja TIDAK diisi: hostname, nama database,
+      # dan kredensial cukup dibaca dari .env supaya hanya ada satu sumber
+      # kebenaran. Mengisinya di sini dengan host "db" -- seperti sebelumnya
+      # service MySQL masih ada -- akan membuat container mencari hostname
+      # yang sudah tidak ada dan mengalahkan .env pada saat yang sama.
       - APP_BASEURL=${app_baseURL:-http://localhost:8092/}
       - UG_URL=${usergate_url:-}
       - UG_API_KEY=${usergate_api_key:-}
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - inventaris
-
-  # ─── MySQL Database ──────────────────────────────
-  db:
-    image: mysql:8.0
-    container_name: inventaris-db
-    restart: unless-stopped
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: inventaris
-      MYSQL_USER: inventaris
-      MYSQL_PASSWORD: inventaris_secret
-    volumes:
-      - db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - inventaris
 
 volumes:
-  db-data:
   app-writable:
-
-networks:
-  inventaris:
-    driver: bridge
