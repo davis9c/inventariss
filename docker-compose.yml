@@ -24,7 +24,25 @@ services:
       dockerfile: Dockerfile
     container_name: inventaris-app
     ports:
-      # host:port di dalam container. Ganti angka pertama kalau live server
-      # memakai port lain, atau dibiarkan seperti ini di belakang reverse
-      # proxy.
+      # host:port di dalam container. Angka pertama diambil dari APP_PORT di
+      # .env (Compose meng-interpolasi ./.env secara otomatis), dengan 8082
+      # sebagai cadangan kalau variabelnya belum ada. Di belakang reverse
+      # proxy, biarkan saja seperti ini.
       - "${APP_PORT:-8082}:80"
+    volumes:
+      # Hanya .env yang di-mount, dan secara read-only.
+      #
+      # .env tidak bisa ikut ter-copy ke image karena .dockerignore
+      # mengecualikannya, jadi tanpa mount ini container berjalan tanpa
+      # konfigurasi sama sekali: CodeIgniter lalu jatuh ke
+      # app/Config/Database.php yang menunjuk localhost dengan user kosong, dan
+      # entrypoint akan membaca hostname yang salah lalu migrate ke tempat
+      # yang tidak benar.
+      #
+      # Kode dan vendor TIDAK di-mount, jadi tetap datang dari image: vendor
+      # hasil `composer install --no-dev` (tanpa dependency development), dan
+      # perubahan kode butuh `docker compose up -d --build`.
+      #
+      # writable juga tidak di-mount -- session, log, cache, dan berkas
+      # unggahan milik container, bukan host.
+      - ./.env:/var/www/html/.env:ro
