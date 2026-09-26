@@ -23,7 +23,7 @@ tests/
 build/
 
 # Environment (will be mounted or copied)
-.env
+# .env
 
 # Writable (will be mounted as volume)
 writable/cache/*
