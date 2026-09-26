@@ -8,6 +8,7 @@
 #   - override konfigurasi aplikasi lewat environment variable. Tidak ada satu
 #     pun nilai app.* atau database.* di blok environment, sehingga .env
 #     benar-benar satu-satunya sumber kebenaran.
+#   - service migrasi. Migrasi dan seeder dijalankan manual, lihat di bawah.
 #
 # `.env` tidak pernah ikut ter-copy ke image (lihat .dockerignore) dan juga
 # tidak di-*bake* lewat `COPY .env .`. Alasannya: kredensial database dan API
@@ -16,40 +17,19 @@
 # akses ke database produksi. Image tetap bisa dijalankan tanpa compose lewat
 # `docker run --env-file .env ...`, yang juga tidak menaruh kredensial di image.
 #
-# ─── Urutan deploy ───────────────────────────────────
-#   Awal setup, dan setiap ada versi baru:
-#       docker compose build
-#       docker compose run --rm migrate
-#       docker compose up -d
+# ─── Migrasi & seeder ─────────────────────────────────
+# Dijalankan manual dari host, BUKAN oleh container:
 #
-#   `run --rm migrate` wajib ada. Container `app` TIDAK menjalankan migrasi:
-#   restart, stop, dan enable tidak pernah menyentuh database.
-#   Peringatan: `--build` juga wajib setelah ada kode atau berkas migrasi
-#   baru, karena kode berasal dari image, bukan dari host.
+#     docker compose exec app php spark migrate
+#     docker compose exec app php spark db:seed DatabaseSeeder
+#
+# Container `app` tidak pernah menjalankan migrasi saat start, restart, atau
+# saat dihidupkan kembali oleh daemon Docker. Konsekuensinya, kalau skema
+# database belum sesuai kode yang baru di-deploy, tidak ada yang mencegah
+# container melayani trafik -- dan error-nya baru muncul saat aplikasi dipakai.
+# Karena itu `docker compose up -d --build` dan dua perintah di atas sebaiknya
+# dijalankan berurutan setiap kali ada versi baru.
 services:
-  # Migrasi + seed, satu kali jalan lalu container ini dibuang.
-  #
-  # `profiles` membuat service ini TIDAK ikut start oleh `up` maupun
-  # `restart` -- hanya jalan ketika dipanggil namanya secara eksplisit.
-  # Kent耐烦server yang di-`up` tidak akan pernah menyentuh database.
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    # profiles: diaktifkan otomatis oleh `docker compose run migrate`.
-    profiles: ["migrate"]
-    # MIGRATE_ONLY membuat entrypoint menjalankan migrate+seed lalu KELUAR
-    # tanpa menyalakan Apache. Ini kendali alur container, bukan konfigurasi
-    # aplikasi, jadi tidak melanggar aturan "satu sumber kebenaran" di atas.
-    environment:
-      MIGRATE_ONLY: "1"
-    volumes:
-      - ./.env:/var/www/html/.env:ro
-    # Tidak ada restart policy: kalau migrasi gagal, container BiARANG
-    # berhenti dengan exit non-zero supaya deploy terhenti di sini, bukan
-    # diulang diam-diam sampai berhasil.
-    restart: "no"
-
   app:
     build:
       context: .

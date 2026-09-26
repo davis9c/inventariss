@@ -77,19 +77,14 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html/writable
 
 # ─── Entrypoint ──────────────────────────────────────
-# Entry point ini punya DUA mode, dipilih oleh environment MIGRATE_ONLY, dan
-# pemanggilnya dijelaskan di docker-compose.yml. Ringkasnya:
+# Entry point ini sengaja tanpa logika database: container aplikasi tidak
+# menjalankan migrasi, tidak menjalankan seeder, dan tidak memeriksa koneksi
+# database. Migrasi dan seeder dijalankan manual dari host -- perintahnya
+# tertulis di docker-compose.yml.
 #
-#   MIGRATE_ONLY=1  -> service `migrate`: tunggu database siap tanpa batas,
-#                      jalankan migrate + seed, lalu KELUAR. Kegagalan
-#                      diteruskan sebagai exit non-zero supaya deploy berhenti.
-#   (tanpa itu)     -> service `app`: JANGAN sentuh database sama sekali.
-#                      Hanya memperingatkan kalau tabel `migrations` belum ada,
-#                      lalu langsung menjalankan Apache.
-#
-# Pemisahan itu disengaja: container aplikasi bisa di-restart, di-stop, dan
-# di-disable tanpa sekali pun menulis ke database. Migrasi hanya terjadi
-# pada langkah deploy yang eksplisit: `docker compose run --rm migrate`.
+# Alasannya, container bisa start, restart, di-stop, atau dihidupkan kembali
+# oleh daemon Docker karena alasan apa pun. Tidak satu pun kejadian itu
+# seharusnya menulis ke database tanpa sengaja.
 #
 # Script-nya ada di berkas repo (docker-entrypoint.sh), bukan ditulis inline
 # di sini, supaya bisa dibaca dan diperbaiki tanpa menyentuh Dockerfile.
