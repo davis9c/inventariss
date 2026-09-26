@@ -1,18 +1,23 @@
+# Seluruh konfigurasi aplikasi berasal dari berkas .env di root repo.
+# Berkas itu ter-bind-mount ke dalam container, jadi isinya dipakai apa adanya
+# oleh container maupun oleh server pengembangan (php -S).
+#
+# Yang TIDAK ada di sini:
+#   - service database. Tidak ada container MySQL, tidak ada volume db-data,
+#     dan tidak ada depends_on. MySQL dijalankan di luar Docker.
+#   - override konfigurasi lewat environment variable. Dulu ada, tapi hanya
+#     untuk mengalahkan .env yang menunjuk database dev -- dan saat itu masih
+#     ada service db. Sekarang justru dikehendaki agar .env yang menang, jadi
+#     tidak ada satu pun nilai app.* atau database.* di blok environment.
+#
+# Konsekuensi yang perlu diketahui: selama .env menunjuk dev_inventaris,
+# container dan server pengembangan BERBAGAI satu database. Entrypoint
+# menjalankan migrate + seed setiap start -- keduanya idempoten, jadi tidak
+# menghapus dan tidak mengalikan baris -- tapi perubahan dari salah satu akan
+# terlihat di yang lain. Kalau ingin terpisah, cukup ubah
+# database.default.database di .env (mis. ke db_am_inventaris); compose tidak
+# perlu disentuh.
 services:
-  # ─── Web Application ─────────────────────────────
-  #
-  # Database TIDAK ada di compose. Aplikasi memakai MySQL eksternal yang
-  # dikonfigurasi lewat .env (database.default.*). Service `db` yang
-  # sebelumnya ada di sini sudah dihapus; sekarang tidak ada lagi container
-  # MySQL, tidak ada volume db-data, dan tidak ada depends_on.
-  #
-  # Konsekuensi yang perlu diketahui: selama .env menunjuk dev_inventaris,
-  # container dan dev server BERBAGAI satu database. Entrypoint menjalankan
-  # migrate + seed setiap start -- keduanya idempoten, jadi tidak menghapus
-  # dan tidak mengalikan baris -- tapi perubahan dari salah satu akan
-  # terlihat di yang lain. Kalau ingin terpisah, cukup ubah
-  # database.default.database di .env (mis. ke db_am_inventaris); compose
-  # tidak perlu disentuh.
   app:
     build:
       context: .
@@ -20,29 +25,22 @@ services:
     container_name: inventaris-app
     restart: unless-stopped
     ports:
+      # host:port di dalam container. Ganti angka pertama kalau live server
+      # memakai port lain, atau dibiarkan seperti ini di belakang reverse
+      # proxy.
       - "8092:80"
     volumes:
+      # Kode dan .env mengikuti host, supaya tidak perlu rebuild setiap ada
+      # perubahan dan .env tetap jadi satu sumber kebenaran.
       - .:/var/www/html
+      # writable TIDAK ikut bind-mount: session, log, dan berkas unggahan
+      # milik container, bukan host.
       - app-writable:/var/www/html/writable
     environment:
+      # Satu-satunya override, dan bisa tanpa mekanisme tambahan: PHP mengisi
+      # $_ENV dari process env sebelum CodeIgniter membaca .env, sehingga
+      # nilai di sini menang atas CI_ENVIRONMENT di .env.
       - CI_ENVIRONMENT=production
-      # Override opsional. Kosongkan untuk memakai nilai dari .env host.
-      #
-      # Nama variabelnya TIDAK mengandung titik, itu disengaja. Docker
-      # membuang nama environment variable bertitik, sementara hanya bentuk
-      # titik yang dibaca CodeIgniter lebih dulu. Nilai di sini dipetakan ke
-      # $_ENV oleh docker/container-env.php yang dipasang sebagai
-      # auto_prepend_file: file itu berjalan sebelum .env dibaca, dan
-      # CodeIgniter hanya menulis ke $_ENV kalau nilainya masih kosong.
-      #
-      # DB_HOST dan friends sengaja TIDAK diisi: hostname, nama database,
-      # dan kredensial cukup dibaca dari .env supaya hanya ada satu sumber
-      # kebenaran. Mengisinya di sini dengan host "db" -- seperti sebelumnya
-      # service MySQL masih ada -- akan membuat container mencari hostname
-      # yang sudah tidak ada dan mengalahkan .env pada saat yang sama.
-      - APP_BASEURL=${app_baseURL:-http://localhost:8092/}
-      - UG_URL=${usergate_url:-}
-      - UG_API_KEY=${usergate_api_key:-}
 
 volumes:
   app-writable:

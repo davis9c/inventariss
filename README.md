@@ -30,14 +30,18 @@ Sistem manajemen inventaris berbasis web dengan integrasi UserGate untuk autenti
 
 ---
 
-## Instalasi Manual
+## Instalasi untuk Pengembangan
+
+Untuk development, aplikasi jalan langsung di host tanpa Docker. Untuk
+production, pakai [Docker](#instalasi-dengan-docker) -- lebih sedikit
+perbedaan konfigurasi antar lingkungan.
 
 ### Prasyarat
 
-- PHP 8.2+ dengan extensi: `intl`, `mbstring`, `mysqlnd`, `curl`, `json`
-- MySQL 5.7+ atau 8.0+
+- PHP 8.2+ dengan extensi: `intl`, `mbstring`, `mysqlnd`, `curl`, `json`, `gd`, `zip`
+- MySQL 5.7+ atau 8.0+ (boleh di luar mesin ini)
 - Composer
-- Web server (Apache/Nginx)
+- UserGate yang bisa dijangkau dari host
 
 ### Langkah-langkah
 
@@ -49,42 +53,47 @@ cd inventaris
 # 2. Install dependencies
 composer install
 
-# 3. Copy environment file
-cp env .env
-
-# 4. Edit .env — sesuaikan konfigurasi
+# 3. Siapkan konfigurasi
+cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` -- hanya nilai bertanda `[PER MESIN]` yang wajib disesuaikan:
 
 ```ini
-CI_ENVIRONMENT = production
+CI_ENVIRONMENT = development
 
 app.baseURL = 'http://localhost:8092/'
 
-database.default.hostname = localhost
+database.default.hostname = 10.10.10.12
 database.default.database = inventaris
 database.default.username = root
-database.default.password = your_password
+database.default.password = <password>
 database.default.DBDriver = MySQLi
 database.default.port = 3306
 
 usergate.url = 'http://localhost:8091/api/v1'
-usergate.api_key = 'your_usergate_api_key'
+usergate.api_key = <api-key>
 ```
 
+Di host saja, `localhost` untuk UserGate **boleh** dipakai karena tidak ada
+container yang menghalangi. Tapi kalau `.env` yang sama nanti dipakai container
+sekaligus -- dan `docker-compose.yml` memang me-*bind-mount* repo ini, jadi
+`php -S` dan container membaca file yang sama -- maka `localhost` akan berarti
+"container itu sendiri" dan login akan gagal. Kalau kedua cara dipakai di satu
+mesin, pakai alamat IP supaya bisa dijangkau dari keduanya.
+
 ```bash
-# 5. Buat database
+# 4. Buat database, kalau belum ada
 mysql -u root -p -e "CREATE DATABASE inventaris CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 
-# 6. Jalankan migrasi & seed
+# 5. Migrasi & seed
 php spark migrate
 php spark db:seed DatabaseSeeder
 
-# 7. Set permission writable
-chmod -R 777 writable/
+# 6. Pastikan writable bisa ditulis
+chmod -R 775 writable/
 
-# 8. Jalankan server
+# 7. Jalankan server
 php spark serve --port 8092
 ```
 
@@ -99,20 +108,27 @@ Buka `http://localhost:8092` di browser.
 
 ---
 
-## Instalasi Docker
+## Instalasi dengan Docker
+
+Ini cara install untuk production. Database **tidak** dijalankan oleh Docker --
+MySQL ada di luar, dan `.env` yang menunjuk ke sana.
 
 ### Prasyarat
 
-- Docker 20.10+
-- Docker Compose v2+
+- Docker 23+ (butuh BuildKit, karena `Dockerfile` memakai heredoc)
+- Docker Compose v2.24+ (contoh override port di bawah memakai tag `!override`)
+- MySQL yang sudah bisa dijangkau dari host Docker
+- UserGate yang sudah bisa dijangkau dari host Docker
 
-### File yang Diperlukan
+### File yang berperan
 
-Pastikan file berikut ada di root project:
+Hanya tiga, semuanya di root project:
 
-- `Dockerfile`
-- `docker-compose.yml`
-- `.dockerignore`
+| File | Isinya |
+|---|---|
+| `Dockerfile` | Image: ekstensi PHP, Apache, dan entrypoint. Script entrypoint ditulis inline, jadi tidak ada folder `docker/` |
+| `docker-compose.yml` | Service, port, volume, dan satu-satunya override: `CI_ENVIRONMENT` |
+| `.env` | Seluruh konfigurasi aplikasi. Di-*bind-mount* ke dalam container |
 
 ### Langkah-langkah
 
@@ -121,45 +137,79 @@ Pastikan file berikut ada di root project:
 git clone <repository-url> inventaris
 cd inventaris
 
-# 2. Copy environment file
-cp env .env
-
-# 3. Edit .env
+# 2. Siapkan konfigurasi
+cp .env.example .env
 ```
 
-Edit `.env` — **gunakan nama service Docker sebagai hostname database**:
+Edit `.env`. Yang **wajib** disesuaikan:
 
 ```ini
-CI_ENVIRONMENT = production
+# URL dasar aplikasi. Harus benar untuk mesin ini -- tidak ada auto-deteksi
+# host, dan nilai ini membangun action form login serta redirect.
+app.baseURL = 'https://inventaris.domain.co.id/'
 
-app.baseURL = 'http://localhost:8092/'
-
-database.default.hostname = db
+# MySQL di luar Docker. Pastikan host ini bisa dijangkau dari container.
+database.default.hostname = 10.10.10.12
 database.default.database = inventaris
-database.default.username = inventaris
-database.default.password = inventaris_secret
-database.default.DBDriver = MySQLi
-database.default.port = 3306
+database.default.username = inv
+database.default.password = <password>
 
-usergate.url = 'http://usergate:8091/api/v1'
-usergate.api_key = 'your_usergate_api_key'
+# UserGate. Jangan pakai localhost: dari dalam container, localhost berarti
+# container itu sendiri, sehingga login gagal dengan "Connection refused".
+usergate.url = 'http://10.10.10.18:8091/api/v1'
+usergate.api_key = <api-key>
 ```
+
+`CI_ENVIRONMENT` **jangan** diubah di `.env`. Nilainya `development` di sana
+untuk server pengembangan, dan `docker-compose.yml` menimpanya dengan
+`production` untuk container. Nilai container menang tanpa mekanisme tambahan,
+karena PHP mengisi `$_ENV` dari process env sebelum CodeIgniter membaca `.env`.
 
 ```bash
-# 4. Build & jalankan container
+# 3. Build & jalankan
 docker compose up -d --build
-
-# 5. Jalankan migrasi & seed
-docker compose exec app php spark migrate
-docker compose exec app php spark db:seed DatabaseSeeder
-
-# 6. Set permission
-docker compose exec app chmod -R 777 writable/
 ```
 
-Buka `http://localhost:8092` di browser.
+Migrasi dan seed **otomatis** dijalankan entrypoint setiap container start.
+Keduanya idempoten, jadi restart tidak menghapus dan tidak mengalikan baris.
+Tidak ada `chmod` manual juga -- `writable` sudah di-*chown* ke `www-data` saat
+build.
 
-### Perintah Docker Berguna
+Cek log untuk memastikan:
+
+```bash
+docker compose logs app
+```
+
+Yang diharapkan:
+
+```
+[entrypoint] database: 10.10.10.12
+[entrypoint] menunggu database (maks 30 detik)
+[entrypoint] menjalankan migrasi
+Migrations complete.
+[entrypoint] mengisi data awal (idempoten)
+Seeded: App\Database\Seeds\DatabaseSeeder
+```
+
+Kalau muncul `PERINGATAN: ... belum terjangkau`, container tetap jalan dan
+Apache tetap melayani, tapi migrate/seed dilewati. Perbaiki
+`database.default.*` di `.env`, lalu `docker compose restart app`.
+
+Buka `app.baseURL` di browser.
+
+### Mengubah port
+
+Port host ada di `docker-compose.yml`. Di belakang reverse proxy biasanya
+`8092:80` sudah cukup dan proxy yang meneruskan. Kalau perlu diganti, edit satu
+baris:
+
+```yaml
+ports:
+  - "80:80"
+```
+
+### Perintah Docker
 
 ```bash
 # Lihat log
@@ -171,15 +221,35 @@ docker compose exec app bash
 # Jalankan spark command
 docker compose exec app php spark <command>
 
-# Restart container
+# Restart
 docker compose restart app
 
-# Stop semua container
+# Rebuild setelah ubah kode
+docker compose up -d --build
+
+# Stop
 docker compose down
 
-# Stop + hapus volume database
+# Stop + hapus volume (MENGHAPUS session, log, dan berkas unggahan)
 docker compose down -v
 ```
+
+Tidak ada volume database, jadi `down -v` tidak menyentuh data. Data MySQL ada
+di luar Docker.
+
+### Kalau build gagal
+
+**`RUN <<'SHELL'` ditolak atau build berhenti di situ** -- BuildKit versi lama
+tidak mendukung heredoc. Perbarui Docker ke 23+.
+
+**`chmod: cannot access '.../public/vendor'`** -- folder `public/vendor` tidak
+ada di checkout. File DataTables di sana harusnya ter-*commit*. Kalau
+`git status` menunjukkan `vendor/` ter-*ignore*, pastikan `.gitignore` menulis
+`/vendor/` dengan garis miring depan, bukan `vendor/` polos -- yang terakhir juga
+menyaring `public/vendor/`.
+
+**`extension ... already loaded`** -- peringatan, bukan error. Build tetap
+berhasil.
 
 ---
 
@@ -203,8 +273,7 @@ inventaris/
 │   │   ├── Category.php  # Kategori barang
 │   │   ├── Location.php  # Lokasi
 │   │   ├── Unit.php      # Unit/departemen
-│   │   ├── User.php      # Manajemen user
-│   │   └── Role.php      # Manajemen role
+│   │   └── User.php      # Manajemen user (role dikelola lewat seeder)
 │   ├── Filters/          # Filter request
 │   │   ├── AuthFilter.php   # Cek session & token refresh
 │   │   └── RoleFilter.php   # Cek role user
@@ -214,19 +283,21 @@ inventaris/
 │   ├── Database/
 │   │   └── Migrations/   # Database migrations
 │   └── Views/            # Template views
-│       ├── layout/       # Header, sidebar, footer
+│       ├── layout/       # Header, navbar, footer
+│       ├── partials/     # Komponen dipakai ulang (galeri, uploader)
 │       ├── auth/         # Login page
 │       ├── setup/        # Setup page
 │       └── ...           # View per modul
 ├── public/               # Web root (document root)
 │   ├── index.php         # Entry point
-│   ├── vendor/           # CSS, JS assets
-│   ├── js/               # Custom JavaScript
-│   └── webfonts/         # Font Awesome fonts
+│   ├── vendor/           # DataTables (harus ter-commit, bukan .gitignore)
+│   └── js/               # Custom JavaScript
 ├── writable/             # Cache, logs, session, uploads
-├── .env                  # Environment config
-├── Dockerfile            # Docker image
+├── .env                  # Environment config (per mesin, tidak di-commit)
+├── .env.example          # Template .env (di-commit)
+├── Dockerfile            # Docker image, entrypoint ditulis inline
 ├── docker-compose.yml    # Docker compose
+├── .dockerignore         # Berkas yang tidak ikut build context
 └── composer.json         # PHP dependencies
 ```
 
@@ -369,35 +440,39 @@ Table 'inventaris.users' doesn't exist
 
 ### Permission Error
 
-```
-chmod: cannot access 'writable/'
-```
+`writable/` adalah satu-satunya folder yang perlu bisa ditulis: session, log,
+cache, dan berkas unggahan. Apache hanya perlu membaca sisanya.
 
 ```bash
-chmod -R 777 writable/
-# atau untuk Docker:
-docker compose exec app chmod -R 777 writable/
+# Server pengembangan
+chmod -R 775 writable/
+
+# Docker -- biasanya tak perlu, ownership sudah diatur saat build.
+# Hanya perlu kalau volume writable pernah diisi dari luar container.
+docker compose exec app chown -R www-data:www-data writable/
 ```
 
 ### Asset Tampilan Rusak
 
 - Hard refresh: `Ctrl + Shift + R`
 - Cek browser console untuk error 404 pada CSS/JS
-- Pastikan folder `public/vendor/` dan `public/webfonts/` ada
+- Pastikan `public/vendor/datatables.min.css` dan `.js` ada. Keduanya wajib
+  ter-*commit*. Kalau `.gitignore` menulis `vendor/` tanpa garis miring depan,
+  `public/vendor/` ikut tersaring dan file itu hilang dari checkout -- tabel
+  tetap tampil, tapi searching, sorting, dan paginate tidak berfungsi.
 
 ---
 
 ## Development
 
-### Jalankan dalam mode development
+### Menjalankan ulang
 
 ```bash
-# Edit .env
-CI_ENVIRONMENT = development
-
-# Jalankan server
 php spark serve --port 8092
 ```
+
+Tidak perlu menyentuh `.env` untuk berpindah mode: `CI_ENVIRONMENT` di sana
+sudah `development`, dan hanya container yang menimpanya menjadi `production`.
 
 ### Database Migration
 
