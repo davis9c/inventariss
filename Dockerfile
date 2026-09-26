@@ -77,17 +77,22 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html/writable
 
 # ─── Entrypoint ──────────────────────────────────────
-# Menyiapkan skema database sebelum Apache menerima trafik, supaya tidak ada
-# kondisi di mana container sudah melayani permintaan tapi tabelnya belum ada.
+# Entry point ini punya DUA mode, dipilih oleh environment MIGRATE_ONLY, dan
+# pemanggilnya dijelaskan di docker-compose.yml. Ringkasnya:
+#
+#   MIGRATE_ONLY=1  -> service `migrate`: tunggu database siap tanpa batas,
+#                      jalankan migrate + seed, lalu KELUAR. Kegagalan
+#                      diteruskan sebagai exit non-zero supaya deploy berhenti.
+#   (tanpa itu)     -> service `app`: JANGAN sentuh database sama sekali.
+#                      Hanya memperingatkan kalau tabel `migrations` belum ada,
+#                      lalu langsung menjalankan Apache.
+#
+# Pemisahan itu disengaja: container aplikasi bisa di-restart, di-stop, dan
+# di-disable tanpa sekali pun menulis ke database. Migrasi hanya terjadi
+# pada langkah deploy yang eksplisit: `docker compose run --rm migrate`.
 #
 # Script-nya ada di berkas repo (docker-entrypoint.sh), bukan ditulis inline
 # di sini, supaya bisa dibaca dan diperbaiki tanpa menyentuh Dockerfile.
-#
-# Kegagalan sengaja tidak dibiarkan fatal. Database berada di luar Docker
-# (lihat docker-compose.yml), jadi belum tentu hidup ketika container start.
-# Apache tetap dinyalakan: halaman login tetap bisa dibuka, dan pesan
-# kesalahannya jauh lebih berguna daripada container yang restart terus tanpa
-# penjelasan.
 #
 # Layer COPY dipisah dari `COPY . .` supaya build cache tidak hilang setiap kali
 # kode aplikasi berubah.

@@ -1,28 +1,64 @@
-# Seluruh konfigurasi aplikasi berasal dari berkas .env di root repo.
-# Berkas itu ter-bind-mount ke dalam container, jadi isinya dipakai apa adanya
+# Seluruh konfigurasi aplikasi berasal dari berkas .env di root repo. Berkas itu
+# ter-bind-mount ke container secara read-only, jadi isinya dipakai apa adanya
 # oleh container maupun oleh server pengembangan (php -S).
 #
 # Yang TIDAK ada di sini:
-#   - service database. Tidak ada container MySQL, tidak ada volume db-data,
-#     dan tidak ada depends_on. MySQL dijalankan di luar Docker.
-#   - override konfigurasi lewat environment variable. Dulu ada, tapi hanya
-#     untuk mengalahkan .env yang menunjuk database dev -- dan saat itu masih
-#     ada service db. Sekarang justru dikehendaki agar .env yang menang, jadi
-#     tidak ada satu pun nilai app.* atau database.* di blok environment.
+#   - service database. Tidak ada container MySQL, tidak ada volume db-data.
+#     MySQL dijalankan di luar Docker, jadi `depends_on` tidak ada gunanya.
+#   - override konfigurasi aplikasi lewat environment variable. Tidak ada satu
+#     pun nilai app.* atau database.* di blok environment, sehingga .env
+#     benar-benar satu-satunya sumber kebenaran.
 #
-# Konsekuensi yang perlu diketahui: selama .env menunjuk dev_inventaris,
-# container dan server pengembangan BERBAGAI satu database. Entrypoint
-# menjalankan migrate + seed setiap start -- keduanya idempoten, jadi tidak
-# menghapus dan tidak mengalikan baris -- tapi perubahan dari salah satu akan
-# terlihat di yang lain. Kalau ingin terpisah, cukup ubah
-# database.default.database di .env (mis. ke db_am_inventaris); compose tidak
-# perlu disentuh.
+# `.env` tidak pernah ikut ter-copy ke image (lihat .dockerignore) dan juga
+# tidak di-*bake* lewat `COPY .env .`. Alasannya: kredensial database dan API
+# key akan tersimpan permanen di layer image yang tidak bisa dihapus, dan
+# siapa pun yang punya image itu (docker save, registry) langsung mendapat
+# akses ke database produksi. Image tetap bisa dijalankan tanpa compose lewat
+# `docker run --env-file .env ...`, yang juga tidak menaruh kredensial di image.
+#
+# ─── Urutan deploy ───────────────────────────────────
+#   Awal setup, dan setiap ada versi baru:
+#       docker compose build
+#       docker compose run --rm migrate
+#       docker compose up -d
+#
+#   `run --rm migrate` wajib ada. Container `app` TIDAK menjalankan migrasi:
+#   restart, stop, dan enable tidak pernah menyentuh database.
+#   Peringatan: `--build` juga wajib setelah ada kode atau berkas migrasi
+#   baru, karena kode berasal dari image, bukan dari host.
 services:
+  # Migrasi + seed, satu kali jalan lalu container ini dibuang.
+  #
+  # `profiles` membuat service ini TIDAK ikut start oleh `up` maupun
+  # `restart` -- hanya jalan ketika dipanggil namanya secara eksplisit.
+  # Kent耐烦server yang di-`up` tidak akan pernah menyentuh database.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # profiles: diaktifkan otomatis oleh `docker compose run migrate`.
+    profiles: ["migrate"]
+    # MIGRATE_ONLY membuat entrypoint menjalankan migrate+seed lalu KELUAR
+    # tanpa menyalakan Apache. Ini kendali alur container, bukan konfigurasi
+    # aplikasi, jadi tidak melanggar aturan "satu sumber kebenaran" di atas.
+    environment:
+      MIGRATE_ONLY: "1"
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+    # Tidak ada restart policy: kalau migrasi gagal, container BiARANG
+    # berhenti dengan exit non-zero supaya deploy terhenti di sini, bukan
+    # diulang diam-diam sampai berhasil.
+    restart: "no"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: inventaris-app
+    # Menyalakan ulang container yang mati karena alasan lain (daemon Docker
+    # restart, OOM, kernel update). Container yang sengaja dihentikan manual
+    # (`docker compose stop`) tidak akan dihidupkan lagi -- beda dari `always`.
+    restart: unless-stopped
     ports:
       # host:port di dalam container. Angka pertama diambil dari APP_PORT di
       # .env (Compose meng-interpolasi ./.env secara otomatis), dengan 8082
@@ -31,13 +67,6 @@ services:
       - "${APP_PORT:-8082}:80"
     volumes:
       # Hanya .env yang di-mount, dan secara read-only.
-      #
-      # .env tidak bisa ikut ter-copy ke image karena .dockerignore
-      # mengecualikannya, jadi tanpa mount ini container berjalan tanpa
-      # konfigurasi sama sekali: CodeIgniter lalu jatuh ke
-      # app/Config/Database.php yang menunjuk localhost dengan user kosong, dan
-      # entrypoint akan membaca hostname yang salah lalu migrate ke tempat
-      # yang tidak benar.
       #
       # Kode dan vendor TIDAK di-mount, jadi tetap datang dari image: vendor
       # hasil `composer install --no-dev` (tanpa dependency development), dan
