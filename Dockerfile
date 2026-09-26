@@ -61,16 +61,25 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 COPY . .
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/writable \
-    && chmod -R 755 /var/www/html/public/vendor \
-    && chmod -R 755 /var/www/html/public/js
+# Apache hanya perlu MEMBACA berkas statis dan kode aplikasi, dan `COPY`
+# sudah memberi izin 644/755 yang cukup untuk itu. Satu-satunya path yang
+# harus bisa ditulis adalah `writable`: session, log, cache, dan berkas
+# unggahan.
+#
+# `chown -R` ke seluruh /var/www/html sengaja dihindari. Ada ribuan berkas
+# di vendor/ sehingga build melambat, dan tidak ada yang perlu ditulis di
+# sana.
+#
+# `chmod` untuk public/vendor dan public/js juga dihapus: keduanya tidak
+# butuh izin khusus. public/vendor kadang juga tidak ada sama sekali --
+# `chmod` pada path yang tidak ada mengembalikan exit 1 dan menggagalkan
+# build di server yang repo-nya hasil git clone.
+RUN chown -R www-data:www-data /var/www/html/writable
 
 # Konfigurasi khusus container. container-env.php disuntikkan ke $_ENV
-# sebelum CodeIgniter membaca .env host yang ter-bind-mount, supaya service
-# `db` di docker-compose.yml benar-benar dipakai. Penjelasan ada di
-# docker/container-env.php.
+# sebelum CodeIgniter membaca .env host yang ter-bind-mount, supaya
+# konfigurasi database dari .env (MySQL eksternal) yang dipakai. Penjelasan
+# ada di docker/container-env.php.
 COPY docker/container-env.php /usr/local/share/container-env.php
 COPY docker/php-container.ini /usr/local/etc/php/conf.d/docker-container.ini
 
