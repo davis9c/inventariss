@@ -34,6 +34,7 @@
                         <tr>
                             <th>Nama</th>
                             <th>Gedung</th>
+                            <th>Lantai</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
                             <th>Aksi</th>
@@ -257,6 +258,10 @@ $unitChecks = function (string $prefix) use ($units) {
             { data: 'name' },
             {
                 data: 'building',
+                render: function (d) { return Inventaris.esc(d) || '-'; }
+            },
+            {
+                data: 'floor',
                 render: function (d) { return Inventaris.esc(d) || '-'; }
             },
             {

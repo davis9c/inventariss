@@ -30,8 +30,8 @@ class Location extends BaseController
             return $this->respondAjax($this->datatableResponse(
                 'locations',
                 static fn ($b) => $b->select('locations.*'),
-                ['name', 'building', 'description'],
-                [0 => 'name', 1 => 'building', 2 => 'description', 3 => 'is_active'],
+                ['name', 'building', 'floor', 'description'],
+                [0 => 'name', 1 => 'building', 2 => 'floor', 3 => 'description', 4 => 'is_active'],
                 'name'
             ));
         }
