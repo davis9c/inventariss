@@ -93,12 +93,12 @@ class StockItem extends BaseController
                     'locations.name',
                 ],
                 [
-                    0 => 'stock_items.item_code',
-                    1 => 'stock_items.name',
-                    2 => 'categories.name',
-                    3 => 'units.name',
-                    4 => 'stock_items.quantity',
-                    5 => 'locations.name',
+                    1 => 'stock_items.item_code',
+                    2 => 'stock_items.name',
+                    3 => 'categories.name',
+                    4 => 'units.name',
+                    5 => 'stock_items.quantity',
+                    6 => 'locations.name',
                 ],
                 'stock_items.name'
             ));
