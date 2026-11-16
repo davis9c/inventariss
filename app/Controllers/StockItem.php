@@ -99,6 +99,7 @@ class StockItem extends BaseController
                     4 => 'units.name',
                     5 => 'stock_items.quantity',
                     6 => 'locations.name',
+                    7 => 'stock_items.is_active',
                 ],
                 'stock_items.name'
             ));

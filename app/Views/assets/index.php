@@ -35,6 +35,7 @@
 
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Kode</th>
                             <th>Nama Barang</th>
                             <th>Kategori</th>

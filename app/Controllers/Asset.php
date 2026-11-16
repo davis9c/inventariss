@@ -95,13 +95,13 @@ class Asset extends BaseController
                     'locations.name',
                 ],
                 [
-                    0 => 'assets.asset_code',
-                    1 => 'assets.name',
-                    2 => 'categories.name',
-                    3 => 'units.name',
-                    4 => 'locations.name',
-                    5 => 'assets.condition_status',
-                    6 => 'assets.asset_status',
+                    1 => 'assets.asset_code',
+                    2 => 'assets.name',
+                    3 => 'categories.name',
+                    4 => 'units.name',
+                    5 => 'locations.name',
+                    6 => 'assets.condition_status',
+                    7 => 'assets.asset_status',
                 ],
                 'assets.name'
             ));
