@@ -245,7 +245,7 @@ $locationChecks = function (string $prefix, array $checked = []) use ($locations
             { data: 'name' },
             { data: 'description', render: function (d) { return Inventaris.esc(d) || '-'; } },
             { data: 'is_active', render: function (d) {
-                return d ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>';
+                return Number(d) === 1 ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>';
             }},
             { data: null, orderable: false, searchable: false, render: function (d, type, row) {
                 return '<button type="button" class="btn btn-sm btn-outline-primary btn-detail" data-id="' + row.id + '">Detail</button> ' +

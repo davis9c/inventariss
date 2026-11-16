@@ -264,7 +264,7 @@
     }
 
     function statusBadge(value) {
-        return value
+        return Number(value) === 1
             ? '<span class="badge bg-success">Aktif</span>'
             : '<span class="badge bg-secondary">Non-aktif</span>';
     }

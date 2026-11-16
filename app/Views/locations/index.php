@@ -271,7 +271,7 @@ $unitChecks = function (string $prefix) use ($units) {
             {
                 data: 'is_active',
                 render: function (d) {
-                    return d
+                    return Number(d) === 1
                         ? '<span class="badge bg-success">Aktif</span>'
                         : '<span class="badge bg-secondary">Tidak Aktif</span>';
                 }

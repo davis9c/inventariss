@@ -270,7 +270,7 @@
                 data: 'is_active',
                 orderable: false,
                 render: function(data) {
-                    return data
+                    return Number(data) === 1
                         ? '<span class="badge bg-success">Aktif</span>'
                         : '<span class="badge bg-secondary">Nonaktif</span>';
                 }
