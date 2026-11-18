@@ -5,18 +5,21 @@ namespace App\Controllers;
 use App\Models\AssetModel;
 use App\Models\LocationModel;
 use App\Models\CategoryModel;
+use App\Models\StockItemModel;
 
 class Dashboard extends BaseController
 {
     protected AssetModel $assetModel;
     protected LocationModel $locationModel;
     protected CategoryModel $categoryModel;
+    protected StockItemModel $stockItemModel;
 
     public function __construct()
     {
-        $this->assetModel    = new AssetModel();
-        $this->locationModel = new LocationModel();
-        $this->categoryModel = new CategoryModel();
+        $this->assetModel     = new AssetModel();
+        $this->locationModel  = new LocationModel();
+        $this->categoryModel  = new CategoryModel();
+        $this->stockItemModel = new StockItemModel();
     }
 
     public function index()
@@ -79,6 +82,32 @@ class Dashboard extends BaseController
             ->where('is_active', 1)
             ->countAllResults();
 
+        /*
+         * Ringkasan barang stok dalam satu query agregat. Hanya barang stok
+         * aktif, dan tetap mengikuti pembatasan lokasi user.
+         */
+        $stockBuilder = $this->stockItemModel
+            ->select(
+                'COUNT(*) AS total_items,'
+                . ' COALESCE(SUM(quantity), 0) AS total_quantity,'
+                . ' COALESCE(SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END), 0) AS empty_items',
+                false
+            )
+            ->where('is_active', 1);
+
+        if (has_location_restriction()) {
+            $stockBuilder->whereIn(
+                'location_id',
+                user_location_ids()
+            );
+        }
+
+        $stockSummary = $stockBuilder->first();
+
+        $totalStockItems    = (int) ($stockSummary['total_items'] ?? 0);
+        $totalStockQuantity = (int) ($stockSummary['total_quantity'] ?? 0);
+        $emptyStockItems    = (int) ($stockSummary['empty_items'] ?? 0);
+
         return view('dashboard/index', [
             'title'              => 'Dashboard',
             'totalAssets'        => $totalAssets,
@@ -89,6 +118,9 @@ class Dashboard extends BaseController
             'heavyDamageAssets'  => $heavyDamageAssets,
             'totalLocations'     => $totalLocations,
             'totalCategories'    => $totalCategories,
+            'totalStockItems'    => $totalStockItems,
+            'totalStockQuantity' => $totalStockQuantity,
+            'emptyStockItems'    => $emptyStockItems,
         ]);
     }
 }

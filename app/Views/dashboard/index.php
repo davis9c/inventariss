@@ -109,6 +109,62 @@
     </div>
 
 
+    <!-- Ringkasan Barang Stok -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Jenis Barang Stok
+                    </h6>
+
+                    <h2>
+                        <?= esc($totalStockItems) ?>
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total Kuantitas Stok
+                    </h6>
+
+                    <h2>
+                        <?= esc($totalStockQuantity) ?>
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Stok Habis
+                    </h6>
+
+                    <h2>
+                        <?= esc($emptyStockItems) ?>
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
     <!-- Informasi Tambahan -->
     <div class="card shadow-sm">
 
@@ -149,6 +205,21 @@
                     <p class="mb-2">
                         <strong>Kategori Aktif:</strong>
                         <?= esc($totalCategories) ?>
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Jenis Barang Stok:</strong>
+                        <?= esc($totalStockItems) ?>
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Total Kuantitas Stok:</strong>
+                        <?= esc($totalStockQuantity) ?>
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Stok Habis:</strong>
+                        <?= esc($emptyStockItems) ?>
                     </p>
 
                 </div>
