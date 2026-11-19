@@ -406,8 +406,121 @@
         });
     }
 
+    // ── Tema tampilan (terang / gelap / ikuti sistem) ─────────────
+    // Script di <head> (layout/theme_init.php) sudah memasang tema sebelum
+    // halaman digambar supaya tidak berkedip. Modul ini menangani pergantian
+    // tema, sinkronisasi UI navbar, dan perubahan tema sistem.
+    var THEME_KEY = 'inventaris-theme';
+    var THEME_ICONS = { light: 'bi-sun', dark: 'bi-moon-stars', auto: 'bi-circle-half' };
+    var THEME_LABELS = { light: 'Terang', dark: 'Gelap', auto: 'Sistem' };
+    var themeMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    var currentTheme = readTheme();
+
+    function readTheme() {
+        try {
+            var saved = window.localStorage.getItem(THEME_KEY);
+            if (saved === 'light' || saved === 'dark' || saved === 'auto') return saved;
+        } catch (e) {
+            // localStorage bisa diblokir; gunakan mode sistem.
+        }
+        return 'auto';
+    }
+
+    function saveTheme(mode) {
+        try {
+            window.localStorage.setItem(THEME_KEY, mode);
+        } catch (e) {
+            // Pilihan tetap berlaku di halaman ini walau gagal disimpan.
+        }
+    }
+
+    function resolveTheme(mode) {
+        if (mode === 'light' || mode === 'dark') return mode;
+        return themeMedia && themeMedia.matches ? 'dark' : 'light';
+    }
+
+    function syncThemeControls(mode) {
+        var icon = document.getElementById('themeIcon');
+        if (icon) icon.className = 'bi ' + (THEME_ICONS[mode] || THEME_ICONS.auto);
+
+        var label = document.getElementById('themeLabel');
+        if (label) label.textContent = THEME_LABELS[mode] || THEME_LABELS.auto;
+
+        document.querySelectorAll('[data-theme-option]').forEach(function (item) {
+            var active = item.getAttribute('data-theme-option') === mode;
+            item.classList.toggle('active', active);
+            if (active) {
+                item.setAttribute('aria-current', 'true');
+            } else {
+                item.removeAttribute('aria-current');
+            }
+
+            var check = item.querySelector('.theme-check');
+            if (check) check.classList.toggle('invisible', !active);
+        });
+    }
+
+    function applyTheme(mode) {
+        currentTheme = mode;
+        document.documentElement.setAttribute('data-bs-theme', resolveTheme(mode));
+        document.documentElement.setAttribute('data-theme-mode', mode);
+        syncThemeControls(mode);
+    }
+
+    function setTheme(mode) {
+        if (mode !== 'light' && mode !== 'dark' && mode !== 'auto') mode = 'auto';
+        saveTheme(mode);
+        applyTheme(mode);
+    }
+
+    function closeThemeDropdown(option) {
+        var dropdown = option.closest ? option.closest('.dropdown') : null;
+        var toggle = dropdown ? dropdown.querySelector('[data-bs-toggle="dropdown"]') : null;
+        if (!toggle || !window.bootstrap || !window.bootstrap.Dropdown) return;
+        window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+    }
+
+    function onSystemThemeChange() {
+        if (currentTheme === 'auto') applyTheme('auto');
+    }
+
+    if (themeMedia) {
+        if (typeof themeMedia.addEventListener === 'function') {
+            themeMedia.addEventListener('change', onSystemThemeChange);
+        } else if (typeof themeMedia.addListener === 'function') {
+            themeMedia.addListener(onSystemThemeChange);
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var option = e.target && e.target.closest ? e.target.closest('[data-theme-option]') : null;
+        if (!option) return;
+        setTheme(option.getAttribute('data-theme-option'));
+        closeThemeDropdown(option);
+    });
+
+    // Sinkronkan pilihan bila tema diubah dari tab lain (atau storage dibersihkan).
+    window.addEventListener('storage', function (e) {
+        if (e.key !== THEME_KEY && e.key !== null) return;
+        applyTheme(readTheme());
+    });
+
+    function initTheme() {
+        applyTheme(readTheme());
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTheme);
+    } else {
+        initTheme();
+    }
+
     window.Inventaris = {
         baseUrl: baseUrl,
+        theme: {
+            get: readTheme,
+            set: setTheme
+        },
         esc: escapeHtml,
         toast: toast,
         openModal: openModal,

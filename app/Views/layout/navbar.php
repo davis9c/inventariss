@@ -126,6 +126,39 @@ if ($isSuperAdmin || in_array('Admin Inventaris', $roles)) {
 
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="themeDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false" aria-label="Pilih tema tampilan">
+                        <i class="bi bi-circle-half" id="themeIcon"></i>
+                        <span class="d-none d-xl-inline ms-1 text-body-secondary small" id="themeLabel">Sistem</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center"
+                                data-theme-option="light">
+                                <i class="bi bi-sun me-2"></i>
+                                <span>Terang</span>
+                                <i class="bi bi-check2 ms-auto theme-check invisible"></i>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center"
+                                data-theme-option="dark">
+                                <i class="bi bi-moon-stars me-2"></i>
+                                <span>Gelap</span>
+                                <i class="bi bi-check2 ms-auto theme-check invisible"></i>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center"
+                                data-theme-option="auto">
+                                <i class="bi bi-circle-half me-2"></i>
+                                <span>Ikuti Sistem</span>
+                                <i class="bi bi-check2 ms-auto theme-check invisible"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle"></i>

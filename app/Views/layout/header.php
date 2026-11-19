@@ -7,6 +7,8 @@
 
     <title><?= $title ?? 'Inventaris' ?></title>
 
+    <?= view('layout/theme_init') ?>
+
     <?php
         $assetVer = max(
             filemtime(FCPATH . 'js/inventaris.js') ?: 0,
