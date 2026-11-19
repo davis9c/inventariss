@@ -5,7 +5,7 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 /**
- * Gambar barang dan catatan pergerakan.
+ * Gambar barang, foto lokasi, dan catatan pergerakan.
  *
  * Satu tabel untuk semuanya, jadi setiap query wajib menyebut item_type.
  * Lihat App\Libraries\AttachmentStorage untuk detail mekanisme upload.
@@ -23,6 +23,9 @@ class ItemImageModel extends Model
 
     /** Gambar milik catatan pergerakan aset. */
     public const TYPE_ASSET_MOVEMENT = 'asset_movement';
+
+    /** Foto ruangan milik tabel locations. */
+    public const TYPE_LOCATION = 'location';
 
     protected $table           = 'item_images';
     protected $returnType      = 'array';
@@ -44,7 +47,7 @@ class ItemImageModel extends Model
     protected $skipValidation   = false;
     protected $validationRules  = [
         // item_id TIDAK boleh is_unique — satu barang boleh punya 5 gambar.
-        'item_type'     => 'required|in_list[asset,stock_item,stock_movement,asset_movement]',
+        'item_type'     => 'required|in_list[asset,stock_item,stock_movement,asset_movement,location]',
         'item_id'       => 'required|is_natural_no_zero',
         'title'         => 'required|max_length[150]',
         'description'   => 'permit_empty|max_length[1000]',

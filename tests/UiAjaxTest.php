@@ -31,7 +31,11 @@ final class UiAjaxTest extends CIUnitTestCase
         'stock_items' => [],
         'transactions' => [],
         'opnames'    => [],
+        'item_images' => [],
     ];
+
+    /** @var list<string> Berkas gambar test yang harus dibersihkan saat tearDown. */
+    protected array $imageFiles = [];
 
     protected function setUp(): void
     {
@@ -113,6 +117,9 @@ final class UiAjaxTest extends CIUnitTestCase
             'roles'        => ['Super Admin'],
             'permissions'  => ['*'],
             'isLoggedIn'   => true,
+            // AuthFilter me-refresh token kalau token_expiry kosong/lewat.
+            // Test ini tidak menguji alur refresh, jadi sesi dibuat valid.
+            'token_expiry' => time() + 3600,
         ]);
     }
 
@@ -126,8 +133,46 @@ final class UiAjaxTest extends CIUnitTestCase
         return $id;
     }
 
+    /**
+     * Baris foto lokasi untuk test. Kalau $contents diisi, berkas fisiknya
+     * ikut dibuat di folder gambar supaya endpoint penyaji bisa diuji.
+     */
+    private function insertLocationImage(int $locationId, ?string $contents = null): int
+    {
+        $storedName = 'test-location-' . uniqid() . '.png';
+
+        if ($contents !== null) {
+            $path = \App\Libraries\AttachmentStorage::images()->dir()
+                . DIRECTORY_SEPARATOR . $storedName;
+            file_put_contents($path, $contents);
+            $this->imageFiles[] = $path;
+        }
+
+        $imageId = (int) (new \App\Models\ItemImageModel())->insert([
+            'item_type'     => \App\Models\ItemImageModel::TYPE_LOCATION,
+            'item_id'       => $locationId,
+            'title'         => 'Foto lokasi',
+            'stored_name'   => $storedName,
+            'original_name' => 'ruangan.png',
+            'mime_type'     => 'image/png',
+            'extension'     => 'png',
+            'size_bytes'    => 10,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->ids['item_images'][] = $imageId;
+
+        return $imageId;
+    }
+
     protected function tearDown(): void
     {
+        foreach ($this->imageFiles as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+
         $db = db_connect();
 
         if (! empty($this->ids['opnames'])) {
@@ -174,6 +219,12 @@ final class UiAjaxTest extends CIUnitTestCase
         if (! empty($this->ids['stock_items'])) {
             $db->table('stock_items')
                 ->whereIn('id', $this->ids['stock_items'])
+                ->delete();
+        }
+
+        if (! empty($this->ids['item_images'])) {
+            $db->table('item_images')
+                ->whereIn('id', $this->ids['item_images'])
                 ->delete();
         }
 
@@ -297,6 +348,148 @@ final class UiAjaxTest extends CIUnitTestCase
         $this->assertGreaterThanOrEqual(1, $json['recordsTotal']);
         $this->assertArrayHasKey('item_code', $json['data'][0]);
         $this->assertArrayHasKey('quantity', $json['data'][0]);
+    }
+
+    public function testLocationDetailDataReturnsSummaryCounts(): void
+    {
+        $locationId = $this->ids['locations'][0];
+
+        $json = $this->json($this->get('/locations/data/' . $locationId));
+
+        $this->assertSame($locationId, (int) $json['id']);
+        $this->assertSame(2, (int) $json['asset_count']);
+        $this->assertSame(1, (int) $json['stock_item_count']);
+        $this->assertArrayHasKey('image_id', $json);
+        $this->assertNull($json['image_id']);
+
+        // Lokasi kedua tidak punya aset maupun barang stok.
+        $empty = $this->json($this->get('/locations/data/' . $this->ids['locations'][1]));
+        $this->assertSame(0, (int) $empty['asset_count']);
+        $this->assertSame(0, (int) $empty['stock_item_count']);
+    }
+
+    public function testLocationDetailDataReturnsPhotoId(): void
+    {
+        $locationId = $this->ids['locations'][0];
+        $imageId    = $this->insertLocationImage($locationId);
+
+        $this->assertGreaterThan(0, $imageId);
+
+        $json = $this->json($this->get('/locations/data/' . $locationId));
+
+        $this->assertSame($imageId, (int) $json['image_id']);
+
+        // Kolom thumbnail di DataTable memakai subquery yang sama.
+        $list = $this->json($this->get('/locations?format=json&draw=1&start=0&length=25'));
+        $row  = null;
+
+        foreach ($list['data'] as $candidate) {
+            if ((int) $candidate['id'] === $locationId) {
+                $row = $candidate;
+                break;
+            }
+        }
+
+        $this->assertNotNull($row);
+        $this->assertSame($imageId, (int) $row['image_id']);
+    }
+
+    public function testLocationDeletePurgesItsPhoto(): void
+    {
+        $locationId = $this->ids['locations'][1];
+        $imageId    = $this->insertLocationImage($locationId);
+
+        $this->assertGreaterThan(0, $imageId);
+
+        $json = $this->json(
+            $this->withHeaders($this->ajaxHeaders())
+                ->post('/locations/delete/' . $locationId)
+        );
+
+        $this->assertTrue($json['success']);
+
+        $row = db_connect()
+            ->table('item_images')
+            ->where('id', $imageId)
+            ->get()
+            ->getRowArray();
+
+        $this->assertNull($row, 'Foto lokasi harus ikut terhapus bersama lokasinya.');
+    }
+
+    public function testLocationPhotoIsServedAndDeletedAjax(): void
+    {
+        $locationId = $this->ids['locations'][0];
+
+        // PNG 1x1 transparan, cukup untuk memastikan byte-nya disajikan apa adanya.
+        $png = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+        );
+
+        $imageId = $this->insertLocationImage($locationId, $png);
+        $file    = $this->imageFiles[0];
+
+        $result = $this->get('/locations/images/' . $imageId);
+
+        $this->assertStatus($result, 200);
+        $this->assertSame('image/png', $result->response()->getHeaderLine('Content-Type'));
+        $this->assertSame($png, $result->response()->getBody());
+
+        $json = $this->json(
+            $this->withHeaders($this->ajaxHeaders())
+                ->post('/locations/images/' . $imageId . '/delete')
+        );
+
+        $this->assertTrue($json['success']);
+
+        $row = db_connect()
+            ->table('item_images')
+            ->where('id', $imageId)
+            ->get()
+            ->getRowArray();
+
+        $this->assertNull($row);
+        $this->assertFileDoesNotExist($file);
+    }
+
+    public function testLocationPhotoEndpointRejectsNonLocationImage(): void
+    {
+        // Gambar milik aset tidak boleh bisa dibaca lewat endpoint foto ruangan.
+        $imageId = (int) (new \App\Models\ItemImageModel())->insert([
+            'item_type'     => \App\Models\ItemImageModel::TYPE_ASSET,
+            'item_id'       => $this->ids['assets'][0],
+            'title'         => 'Foto aset',
+            'stored_name'   => 'test-asset-' . uniqid() . '.png',
+            'original_name' => 'aset.png',
+            'mime_type'     => 'image/png',
+            'extension'     => 'png',
+            'size_bytes'    => 10,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->ids['item_images'][] = $imageId;
+
+        // FeatureTest melempar PageNotFoundException, bukan mengubahnya
+        // menjadi respons 404 seperti pada server sungguhan.
+        $this->expectException(\CodeIgniter\Exceptions\PageNotFoundException::class);
+
+        $this->get('/locations/images/' . $imageId);
+    }
+
+    public function testLocationsIndexShowsSummaryAndPhotoControls(): void
+    {
+        $json = $this->json($this->get('/locations?format=json&draw=1&start=0&length=25'));
+
+        $this->assertSame(1, $json['draw']);
+        $this->assertArrayHasKey('image_id', $json['data'][0]);
+
+        $result = $this->get('/locations');
+        $this->assertStatus($result, 200);
+
+        $body = $result->response()->getBody();
+        $this->assertStringContainsString('detailLocationPhotoInput', $body);
+        $this->assertStringContainsString('detailLocationStockCount', $body);
+        $this->assertStringNotContainsString('detailLocationAssets', $body);
     }
 
     public function testStockMovementsIndexReturnsDataTablesJson(): void
@@ -746,7 +939,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $result = $this->post('/assets/delete/' . $this->ids['assets'][1]);
 
         $this->assertStatus($result, 302);
-        $result->assertHeader('Location', 'http://localhost:8898/assets');
+        $result->assertHeader('Location', base_url('assets'));
     }
 
     public function testNonAjaxStockInRedirects(): void
@@ -759,7 +952,7 @@ final class UiAjaxTest extends CIUnitTestCase
         $this->assertStatus($result, 302);
         $result->assertHeader(
             'Location',
-            'http://localhost:8898/stock-items/' . $this->ids['stock_items'][0]
+            base_url('stock-items/' . $this->ids['stock_items'][0])
         );
     }
 

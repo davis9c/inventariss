@@ -5,7 +5,7 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 
 /**
- * Konfigurasi gambar barang (aset dan barang stok).
+ * Konfigurasi gambar barang (aset, barang stok, dan foto lokasi).
  *
  * Gambar ini untuk identifikasi cepat, jadi jenisnya hanya gambar raster.
  * Dokumen (PDF dan lainnya) ditangani Config\AssetDocuments yang terpisah,

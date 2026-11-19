@@ -32,6 +32,7 @@
                 <table id="tabel-locations" class="table table-hover align-middle w-100">
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Nama</th>
                             <th>Gedung</th>
                             <th>Lantai</th>
@@ -189,48 +190,104 @@ $unitChecks = function (string $prefix) use ($units) {
             <div class="modal-body">
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
-                        <label class="form-label text-muted small">Nama Lokasi</label>
-                        <div class="fw-semibold" id="detailLocationName">-</div>
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header">
+                                <strong>Foto Lokasi</strong>
+                            </div>
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                                <img id="detailLocationPhoto"
+                                     alt="Foto lokasi"
+                                     class="img-fluid rounded mb-3 d-none"
+                                     style="max-height: 220px; width: 100%; object-fit: cover;">
+
+                                <div id="detailLocationPhotoEmpty" class="text-muted small mb-3 text-center">
+                                    Belum ada foto lokasi.
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    <button type="button" class="btn btn-sm btn-primary" id="detailLocationPhotoUpload">
+                                        Unggah Foto
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger d-none" id="detailLocationPhotoDelete">
+                                        Hapus Foto
+                                    </button>
+                                </div>
+
+                                <div class="form-text text-center mt-2">
+                                    JPG/PNG. Foto dikecilkan otomatis sebelum diunggah.
+                                </div>
+
+                                <form id="detailLocationPhotoForm" method="post" action="" enctype="multipart/form-data"
+                                      style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+                                    <?= csrf_field() ?>
+                                    <input type="file" name="image" id="detailLocationPhotoInput" accept="image/jpeg,image/png">
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted small">Gedung</label>
-                        <div id="detailLocationBuilding">-</div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted small">Lantai</label>
-                        <div id="detailLocationFloor">-</div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted small">Ruangan</label>
-                        <div id="detailLocationRoom">-</div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted small">Status</label>
-                        <div id="detailLocationStatus">-</div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label text-muted small">Deskripsi</label>
-                        <div id="detailLocationDescription">-</div>
+
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small">Nama Lokasi</label>
+                                <div class="fw-semibold" id="detailLocationName">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small">Gedung</label>
+                                <div id="detailLocationBuilding">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small">Lantai</label>
+                                <div id="detailLocationFloor">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small">Ruangan</label>
+                                <div id="detailLocationRoom">-</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small">Status</label>
+                                <div id="detailLocationStatus">-</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small">Deskripsi</label>
+                                <div id="detailLocationDescription">-</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm mb-3">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Aset di Lokasi</div>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <div class="fs-3 fw-semibold" id="detailLocationAssetCount">0</div>
+                                    <div class="text-muted">aset</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Barang Stok di Lokasi</div>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <div class="fs-3 fw-semibold" id="detailLocationStockCount">0</div>
+                                    <div class="text-muted">jenis</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
                     <div class="card-header d-flex justify-content-between">
                         <strong>Unit yang Menangani</strong>
                         <span class="badge bg-primary" id="detailLocationUnitCount">0 unit</span>
                     </div>
                     <div class="card-body">
                         <div id="detailLocationUnits"></div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between">
-                        <strong>Aset di Lokasi</strong>
-                        <span class="badge bg-primary" id="detailLocationAssetCount">0 aset</span>
-                    </div>
-                    <div class="card-body">
-                        <div id="detailLocationAssets"></div>
                     </div>
                 </div>
             </div>
@@ -247,6 +304,23 @@ $unitChecks = function (string $prefix) use ($units) {
     'use strict';
     var baseUrl = Inventaris.baseUrl;
 
+    var photoOpts = {
+        maxDimension: <?= (int) $imageConfig->maxDimension ?>,
+        quality: <?= (float) $imageConfig->jpegQuality ?>,
+        maxBytes: <?= (int) $imageConfig->maxSizeBytes ?>,
+        maxOriginalBytes: <?= (int) $imageConfig->maxOriginalBytes ?>
+    };
+
+    function photoThumb(row) {
+        if (!row.image_id) {
+            return '<span class="text-muted small">-</span>';
+        }
+
+        return '<img src="' + Inventaris.esc(baseUrl + 'locations/images/' + row.image_id) + '"'
+            + ' class="img-thumbnail rounded" width="48"'
+            + ' alt="" loading="lazy">';
+    }
+
     var createModal = null;
     var editModal   = null;
     var createForm  = document.getElementById('createLocationForm');
@@ -254,7 +328,16 @@ $unitChecks = function (string $prefix) use ($units) {
 
     var dt = Inventaris.datatable('#tabel-locations', {
         url: baseUrl + 'locations?format=json',
+        // Kolom 0 adalah thumbnail dan tidak bisa diurutkan; urutkan
+        // berdasarkan nama seperti default server.
+        order: [[1, 'asc']],
         columns: [
+            {
+                data: 'image_id',
+                orderable: false,
+                searchable: false,
+                render: function (d, type, row) { return photoThumb(row); }
+            },
             { data: 'name' },
             {
                 data: 'building',
@@ -316,6 +399,32 @@ $unitChecks = function (string $prefix) use ($units) {
     // muncul di address bar maupun riwayat browser.
     var detailModal = null;
     var detailId = null;
+    var detailImageId = null;
+
+    var photoForm       = document.getElementById('detailLocationPhotoForm');
+    var photoInput      = document.getElementById('detailLocationPhotoInput');
+    var photoImage      = document.getElementById('detailLocationPhoto');
+    var photoEmpty      = document.getElementById('detailLocationPhotoEmpty');
+    var photoUploadBtn  = document.getElementById('detailLocationPhotoUpload');
+    var photoDeleteBtn  = document.getElementById('detailLocationPhotoDelete');
+
+    function updateDetailPhoto(imageId) {
+        detailImageId = imageId ? Number(imageId) : null;
+
+        if (detailImageId) {
+            photoImage.src = baseUrl + 'locations/images/' + detailImageId;
+            photoImage.classList.remove('d-none');
+            photoEmpty.classList.add('d-none');
+            photoDeleteBtn.classList.remove('d-none');
+            photoUploadBtn.textContent = 'Ganti Foto';
+        } else {
+            photoImage.removeAttribute('src');
+            photoImage.classList.add('d-none');
+            photoEmpty.classList.remove('d-none');
+            photoDeleteBtn.classList.add('d-none');
+            photoUploadBtn.textContent = 'Unggah Foto';
+        }
+    }
 
     function fillDetail(row) {
         detailId = row.id;
@@ -339,18 +448,11 @@ $unitChecks = function (string $prefix) use ($units) {
                       '<td>' + Inventaris.esc(u.name) + '</td></tr>';
               }).join('') + '</tbody></table></div>';
 
-        var assets = row.assets || [];
-        document.getElementById('detailLocationAssetCount').textContent = assets.length + ' aset';
-        document.getElementById('detailLocationAssets').innerHTML = assets.length === 0
-            ? '<div class="text-muted">Belum ada aset di lokasi ini.</div>'
-            : '<div class="table-responsive"><table class="table table-bordered table-hover mb-0">' +
-              '<thead><tr><th>Kode Aset</th><th>Nama Barang</th><th>Unit</th><th>Status</th></tr></thead><tbody>' +
-              assets.map(function (a) {
-                  return '<tr><td>' + Inventaris.esc(a.asset_code) + '</td>' +
-                      '<td>' + Inventaris.esc(a.name) + '</td>' +
-                      '<td>' + Inventaris.esc(a.unit_name || '-') + '</td>' +
-                      '<td>' + Inventaris.esc(a.asset_status || '-') + '</td></tr>';
-              }).join('') + '</tbody></table></div>';
+        // Ringkasan saja: jumlah aset dan jumlah jenis barang stok.
+        document.getElementById('detailLocationAssetCount').textContent = Number(row.asset_count || 0);
+        document.getElementById('detailLocationStockCount').textContent = Number(row.stock_item_count || 0);
+
+        updateDetailPhoto(row.image_id ? Number(row.image_id) : null);
     }
 
     function openDetailById(id) {
@@ -373,6 +475,124 @@ $unitChecks = function (string $prefix) use ($units) {
         if (!detailId) return;
         Inventaris.hideModal('detailLocationModal');
         openEditById(detailId);
+    });
+
+    photoUploadBtn.addEventListener('click', function () {
+        if (!detailId) return;
+        photoInput.click();
+    });
+
+    photoInput.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+
+        if (!file || !detailId) {
+            return;
+        }
+
+        // Simpan id saat ini: kalau modal sudah pindah lokasi sebelum
+        // unggahan selesai, respons tidak boleh menimpa foto lokasi lain.
+        var locationId = detailId;
+
+        if (file.size > photoOpts.maxOriginalBytes) {
+            // Kosongkan input supaya berkas raksasa tidak ikut terkirim.
+            this.value = '';
+            Inventaris.toast(
+                'Ukuran berkas asli melebihi batas '
+                + Math.round(photoOpts.maxOriginalBytes / 1048576) + ' MB.',
+                'danger'
+            );
+            return;
+        }
+
+        var label = photoUploadBtn.textContent;
+        photoUploadBtn.disabled = true;
+        photoUploadBtn.textContent = 'Mengunggah...';
+
+        Inventaris.resizeImage(file, photoOpts)
+            .then(function (result) {
+                var data = new FormData();
+                var token = photoForm.querySelector('[name="csrf_test_name"]');
+
+                if (token) {
+                    data.append('csrf_test_name', token.value);
+                }
+
+                data.append('image', result.file, result.file.name);
+
+                return fetch(baseUrl + 'locations/' + encodeURIComponent(locationId) + '/images', {
+                    method: 'POST',
+                    body: data,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                }).then(function (response) {
+                    return response.json().catch(function () { return null; })
+                        .then(function (json) {
+                            if (!response.ok) { throw { json: json }; }
+                            return json;
+                        });
+                });
+            })
+            .then(function (json) {
+                photoUploadBtn.disabled = false;
+
+                if (detailId === locationId) {
+                    photoUploadBtn.textContent = label;
+                    photoInput.value = '';
+                }
+
+                if (!json || !json.success) {
+                    throw { json: json };
+                }
+
+                if (detailId === locationId) {
+                    updateDetailPhoto(json.data && json.data.id ? json.data.id : null);
+                }
+
+                Inventaris.toast(json.message);
+                dt.ajax.reload(null, false);
+            })
+            .catch(function (err) {
+                photoUploadBtn.disabled = false;
+
+                if (detailId === locationId) {
+                    photoUploadBtn.textContent = label;
+                    photoInput.value = '';
+                }
+
+                var message = (err && err.json && err.json.message)
+                    ? err.json.message
+                    : (err && err.message ? err.message : 'Gagal mengunggah foto.');
+                Inventaris.toast(message, 'danger');
+            });
+    });
+
+    photoDeleteBtn.addEventListener('click', function () {
+        if (!detailImageId) return;
+
+        Inventaris.confirm({
+            title: 'Hapus Foto Lokasi',
+            message: 'Hapus foto lokasi ini?',
+            okText: 'Hapus',
+            onConfirm: function () {
+                Inventaris.fetchJson(
+                    baseUrl + 'locations/images/' + detailImageId + '/delete',
+                    {},
+                    'POST'
+                )
+                    .then(function (json) {
+                        if (json.success) {
+                            updateDetailPhoto(null);
+                            Inventaris.toast(json.message);
+                            dt.ajax.reload(null, false);
+                        } else {
+                            Inventaris.toast(json.message || 'Gagal menghapus foto.', 'danger');
+                        }
+                    })
+                    .catch(function () {
+                        Inventaris.toast('Koneksi gagal.', 'danger');
+                    });
+            }
+        });
     });
 
     // Selalu ambil dari locations/data/:id: baris tabel tidak memuat

@@ -84,6 +84,12 @@ $routes->group(
 
         $routes->get('data/(:num)', 'Location::data/$1');
 
+        // Foto ruangan. Satu foto utama per lokasi; upload baru
+        // menggantikan foto lama.
+        $routes->get('images/(:num)', 'Location::showPhoto/$1');
+        $routes->post('(:num)/images', 'Location::uploadPhoto/$1');
+        $routes->post('images/(:num)/delete', 'Location::deletePhoto/$1');
+
         // Detail lokasi
         $routes->get('(:num)', 'Location::show/$1');
     }
