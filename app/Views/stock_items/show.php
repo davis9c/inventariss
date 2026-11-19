@@ -248,7 +248,7 @@
                         <label class="form-label">Lokasi</label>
                         <select name="location_id" class="form-select" required>
                             <?php foreach ($locations as $location): ?>
-                                <option value="<?= $location['id'] ?>"><?= esc($location['name']) ?></option>
+                                <option value="<?= $location['id'] ?>" <?= $location['id'] == $item['location_id'] ? 'selected' : '' ?>><?= esc($location['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -358,7 +358,7 @@
                         <label class="form-label">Lokasi Tujuan</label>
                         <select name="to_location_id" class="form-select" required>
                             <option value="">-- Pilih Lokasi --</option>
-                            <?php foreach ($locations as $location): ?>
+                            <?php foreach ($transferLocations as $location): ?>
                                 <option value="<?= $location['id'] ?>"><?= esc($location['name']) ?></option>
                             <?php endforeach; ?>
                         </select>

@@ -429,8 +429,7 @@ class StockItem extends BaseController
         }
 
         $locationBuilder = $this->locationModel
-            ->where('is_active', 1)
-            ->where('id !=', $item['location_id']);
+            ->where('is_active', 1);
 
         if (has_location_restriction()) {
             $locationBuilder->whereIn(
@@ -439,26 +438,36 @@ class StockItem extends BaseController
             );
         }
 
+        $locations = $locationBuilder
+            ->orderBy('name', 'ASC')
+            ->findAll();
+
+        // Modal edit harus memuat lokasi barang saat ini; hanya modal
+        // pindah lokasi yang tidak menawarkan lokasi asal.
+        $transferLocations = array_values(array_filter(
+            $locations,
+            static fn (array $location): bool => (int) $location['id'] !== (int) $item['location_id']
+        ));
+
         return view('stock_items/show', [
-            'title'       => 'Detail Barang Stok',
-            'item'        => $item,
-            'history'     => $history,
-            'images'      => (new ItemImageModel())->forItem(
+            'title'             => 'Detail Barang Stok',
+            'item'              => $item,
+            'history'           => $history,
+            'images'            => (new ItemImageModel())->forItem(
                 ItemImageModel::TYPE_STOCK_ITEM,
                 (int) $id
             ),
-            'imageConfig' => new ItemImages(),
-            'categories' => $this->categoryModel
+            'imageConfig'       => new ItemImages(),
+            'categories'        => $this->categoryModel
                 ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->findAll(),
-            'units' => $this->unitModel
+            'units'             => $this->unitModel
                 ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->findAll(),
-            'locations' => $locationBuilder
-                ->orderBy('name', 'ASC')
-                ->findAll(),
+            'locations'         => $locations,
+            'transferLocations' => $transferLocations,
         ]);
     }
 

@@ -521,6 +521,37 @@ final class UiAjaxTest extends CIUnitTestCase
      * AJAX: barang stok
      * ========================================================= */
 
+    public function testStockItemDetailEditModalPreselectsCurrentLocation(): void
+    {
+        $itemId     = $this->ids['stock_items'][0];
+        $locationId = $this->ids['locations'][0];
+
+        $result = $this->get('/stock-items/' . $itemId);
+
+        $this->assertStatus($result, 200);
+
+        $body = $result->response()->getBody();
+
+        // Modal edit harus memuat lokasi barang saat ini dan memilihnya,
+        // termasuk ketika hanya ada satu lokasi aktif.
+        $this->assertMatchesRegularExpression(
+            '/<select name="location_id"[^>]*>.*?<option value="' . $locationId . '" selected>/s',
+            $body,
+            'Lokasi barang saat ini harus tersedia dan terpilih pada modal edit.'
+        );
+
+        // Modal pindah lokasi tetap tidak boleh menawarkan lokasi asal.
+        if (preg_match('/<select name="to_location_id"[^>]*>(.*?)<\/select>/s', $body, $matches) !== 1) {
+            $this->fail('Select lokasi tujuan tidak ditemukan.');
+        }
+
+        $this->assertStringNotContainsString(
+            '<option value="' . $locationId . '">',
+            $matches[1],
+            'Modal pindah lokasi tidak boleh menawarkan lokasi asal.'
+        );
+    }
+
     public function testStockItemStoreAjaxSuccess(): void
     {
         $result = $this->withHeaders($this->ajaxHeaders())
