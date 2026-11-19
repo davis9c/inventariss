@@ -13,8 +13,14 @@
 # kembali oleh daemon Docker karena alasan apa pun (deploy, crash, reboot
 # mesin) -- tidak satu pun dari kejadian itu seharusnya menulis ke database.
 #
-# Satu-satunya tugas script ini adalah meneruskan ke entrypoint bawaan image
-# (docker-php-entrypoint), yang menjalankan docker-php-ext-* untuk ekstensi
-# yang di-install saat runtime. Tanpa penerusan itu, ekstensi runtime tidak
-# akan diproses.
+# Selain meneruskan ke entrypoint bawaan image, script ini memastikan folder
+# unggahan siap dipakai. Folder itu di-bind-mount dari host, jadi owner-nya
+# bisa berbeda -- misalnya root saat Docker pertama kali membuat foldernya.
+# Tanpa chown ini Apache (www-data) gagal menyimpan berkas unggahan.
+mkdir -p /var/www/html/writable/uploads
+chown -R www-data:www-data /var/www/html/writable/uploads
+
+# Teruskan ke entrypoint bawaan image (docker-php-entrypoint), yang
+# menjalankan docker-php-ext-* untuk ekstensi yang di-install saat runtime.
+# Tanpa penerusan itu, ekstensi runtime tidak akan diproses.
 exec docker-php-entrypoint "$@"

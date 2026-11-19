@@ -173,7 +173,8 @@ docker compose up -d --build
 Migrasi dan seed **otomatis** dijalankan entrypoint setiap container start.
 Keduanya idempoten, jadi restart tidak menghapus dan tidak mengalikan baris.
 Tidak ada `chmod` manual juga -- `writable` sudah di-*chown* ke `www-data` saat
-build.
+build, dan entrypoint menyesuaikan owner `writable/uploads` (bind mount dari
+host) setiap container start.
 
 Cek log untuk memastikan:
 
@@ -224,18 +225,56 @@ docker compose exec app php spark <command>
 # Restart
 docker compose restart app
 
-# Rebuild setelah ubah kode
+# Rebuild setelah ubah kode (uploads di writable/uploads tetap aman)
 docker compose up -d --build
 
 # Stop
 docker compose down
 
-# Stop + hapus volume (MENGHAPUS session, log, dan berkas unggahan)
+# Stop + hapus volume (session dan log ikut hilang; uploads TIDAK, karena
+# di-bind-mount dari ./writable/uploads)
 docker compose down -v
 ```
 
 Tidak ada volume database, jadi `down -v` tidak menyentuh data. Data MySQL ada
-di luar Docker.
+di luar Docker. Berkas unggahan juga aman: `./writable/uploads` di-bind-mount
+ke container, jadi isinya tetap tersimpan di host meskipun container dihapus
+atau dibuat ulang.
+
+### Backup berkas unggahan
+
+Berkas unggahan ada di `./writable/uploads` pada host, di luar container, jadi
+bisa di-backup seperti folder biasa:
+
+```bash
+tar czf /backup/inventaris-uploads-$(date +%F).tar.gz \
+  -C /path/ke/inventaris/writable uploads
+```
+
+Untuk restore:
+
+```bash
+tar xzf /backup/inventaris-uploads-YYYY-MM-DD.tar.gz \
+  -C /path/ke/inventaris/writable
+sudo chown -R 33:33 /path/ke/inventaris/writable/uploads
+```
+
+Jangan mengandalkan container sebagai tempat penyimpanan: container bisa
+dibuat ulang kapan saja oleh `docker compose up -d --build`.
+
+### Upgrade dari versi sebelum bind mount
+
+Kalau container lama masih menyimpan berkas unggahan, salin dulu ke host
+**sebelum** rebuild pertama. Setelah container dibuat ulang, isi layer
+container lama tidak bisa dipulihkan.
+
+```bash
+mkdir -p writable/uploads
+docker compose cp app:/var/www/html/writable/uploads/. ./writable/uploads/
+sudo chown -R 33:33 writable/uploads
+```
+
+Setelah itu jalankan `docker compose up -d --build` seperti biasa.
 
 ### Kalau build gagal
 
@@ -447,8 +486,8 @@ cache, dan berkas unggahan. Apache hanya perlu membaca sisanya.
 # Server pengembangan
 chmod -R 775 writable/
 
-# Docker -- biasanya tak perlu, ownership sudah diatur saat build.
-# Hanya perlu kalau volume writable pernah diisi dari luar container.
+# Docker -- biasanya tak perlu: entrypoint sudah menyesuaikan owner
+# writable/uploads setiap container start.
 docker compose exec app chown -R www-data:www-data writable/
 ```
 

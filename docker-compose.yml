@@ -46,12 +46,15 @@ services:
       # proxy, biarkan saja seperti ini.
       - "${APP_PORT:-8082}:80"
     volumes:
-      # Hanya .env yang di-mount, dan secara read-only.
+      # .env di-mount read-only supaya kredensial tidak pernah masuk image.
       #
       # Kode dan vendor TIDAK di-mount, jadi tetap datang dari image: vendor
       # hasil `composer install --no-dev` (tanpa dependency development), dan
       # perubahan kode butuh `docker compose up -d --build`.
       #
-      # writable juga tidak di-mount -- session, log, cache, dan berkas
-      # unggahan milik container, bukan host.
+      # Hanya uploads yang di-mount dari writable. Berkas unggahan harus
+      # bertahan saat container dibuat ulang (`up --build`) atau dihapus
+      # (`down`), jadi tidak boleh tinggal di layer container. Session, log,
+      # dan cache tetap milik container karena isinya boleh hilang.
       - ./.env:/var/www/html/.env:ro
+      - ./writable/uploads:/var/www/html/writable/uploads
