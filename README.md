@@ -369,6 +369,7 @@ Kelola barang non-identitas (jumlah stok).
 | Stock Out | `POST /stock-items/:id/stock-out` | Kurangi stok |
 | Transfer | `POST /stock-items/:id/transfer` | Pindah lokasi |
 | Adjustment | `POST /stock-items/:id/adjustment` | Koreksi stok |
+| Konversi ke Aset | `GET/POST /stock-items/:id/to-asset` | Ubah stok menjadi aset per unit |
 
 ### Stock Opname
 

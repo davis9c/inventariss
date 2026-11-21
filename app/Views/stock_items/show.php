@@ -53,6 +53,13 @@
                     data-bs-target="#adjustmentModal">
                 Penyesuaian
             </button>
+
+            <?php if ((int) $item['quantity'] > 0): ?>
+                <a href="<?= base_url('stock-items/to-asset/' . $item['id']) ?>"
+                    class="btn btn-info">
+                    Konversi ke Aset
+                </a>
+            <?php endif; ?>
         </div>
 
     </div>

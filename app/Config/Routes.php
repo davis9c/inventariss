@@ -209,6 +209,23 @@ $routes->group(
         $routes->get('adjustment/(:num)', 'StockItem::adjustment/$1');
         $routes->post('adjustment/(:num)', 'StockItem::storeAdjustment/$1');
 
+        // Konversi barang stok menjadi aset (per unit, mendukung jumlah > 1).
+        $routes->get('to-asset/(:num)', 'StockItem::toAsset/$1');
+        $routes->post('to-asset/(:num)', 'StockItem::storeToAsset/$1');
+
+        // Alias agar penamaan lama/alternatif tetap bisa dipakai.
+        foreach ([
+            'to-assets',
+            'convert-to-asset',
+            'convert-to-assets',
+            'stock-to-asset',
+            'stock-to-assets',
+            'asset-from-stock',
+        ] as $alias) {
+            $routes->get($alias . '/(:num)', 'StockItem::toAsset/$1');
+            $routes->post($alias . '/(:num)', 'StockItem::storeToAsset/$1');
+        }
+
         // Gambar barang. Logikanya diberikan trait HandlesItemImages,
         // sama persis dengan gambar aset.
         $routes->get('images/(:num)', 'StockItem::downloadItemImage/$1');

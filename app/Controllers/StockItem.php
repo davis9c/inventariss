@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\AssetModel;
 use App\Models\CategoryModel;
 use App\Models\InventoryTransactionModel;
 use App\Models\ItemImageModel;
@@ -24,6 +25,7 @@ class StockItem extends BaseController
     protected string $imageBasePath   = 'stock-items';
     protected string $imageOwnerLabel = 'Barang stok';
 
+    protected AssetModel $assetModel;
     protected StockItemModel $itemModel;
     protected InventoryTransactionModel $transactionModel;
     protected CategoryModel $categoryModel;
@@ -32,6 +34,7 @@ class StockItem extends BaseController
 
     public function __construct()
     {
+        $this->assetModel       = new AssetModel();
         $this->itemModel        = new StockItemModel();
         $this->transactionModel = new InventoryTransactionModel();
         $this->categoryModel    = new CategoryModel();
@@ -1049,6 +1052,263 @@ class StockItem extends BaseController
         return redirect()
             ->to('/stock-items/' . $id)
             ->with('success', 'Penyesuaian stok berhasil dicatat.');
+    }
+
+    public function toAsset($id)
+    {
+        $item = $this->itemModel->find($id);
+
+        if (!$item) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        if (!can_access_location($item['location_id'])) {
+            return redirect()
+                ->to('/stock-items')
+                ->with(
+                    'error',
+                    'Anda tidak memiliki akses ke barang stok tersebut.'
+                );
+        }
+
+        $locationBuilder = $this->locationModel
+            ->where('is_active', 1);
+
+        if (has_location_restriction()) {
+            $locationBuilder->whereIn(
+                'id',
+                user_location_ids()
+            );
+        }
+
+        return view('stock_items/to_asset', [
+            'title'      => 'Konversi ke Aset',
+            'item'       => $item,
+            'categories' => $this->categoryModel
+                ->where('is_active', 1)
+                ->orderBy('name', 'ASC')
+                ->findAll(),
+            'units'      => $this->unitModel
+                ->where('is_active', 1)
+                ->orderBy('name', 'ASC')
+                ->findAll(),
+            'locations'  => $locationBuilder
+                ->orderBy('name', 'ASC')
+                ->findAll(),
+        ]);
+    }
+
+    public function storeToAsset($id)
+    {
+        $isAjax = $this->request->isAJAX();
+
+        $item = $this->itemModel->find($id);
+
+        if (!$item) {
+            if ($isAjax) {
+                return $this->respondError('Barang stok tidak ditemukan.', 404);
+            }
+
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        if (!can_access_location($item['location_id'])) {
+            if ($isAjax) {
+                return $this->respondError('Anda tidak memiliki akses ke barang stok tersebut.', 403);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with(
+                    'error',
+                    'Anda tidak memiliki akses ke barang stok tersebut.'
+                );
+        }
+
+        $rules = [
+            'quantity'         => 'required|is_natural_no_zero',
+            'asset_code'       => 'required|min_length[2]|max_length[50]',
+            'name'             => 'required|min_length[2]|max_length[150]',
+            'category_id'      => 'required|is_natural_no_zero',
+            'unit_id'          => 'required|is_natural_no_zero',
+            'location_id'      => 'required|is_natural_no_zero',
+            'condition_status' => 'required|in_list[Baik,Rusak Ringan,Rusak Berat]',
+            'asset_status'     => 'required|in_list[Aktif,Dipinjam,Tidak Digunakan,Keluar Perusahaan]',
+            'acquisition_year' => 'permit_empty|numeric|greater_than_equal_to[1900]|less_than_equal_to[' . date('Y') . ']',
+            'acquisition_price' => 'permit_empty|decimal',
+            'transaction_date' => 'required|valid_date',
+            'notes'            => 'permit_empty',
+        ];
+
+        if (!$this->validate($rules)) {
+            if ($isAjax) {
+                return $this->respondErrors('Data tidak valid.', $this->validator->getErrors());
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
+
+        $quantity = (int) $this->request->getPost('quantity');
+        $locationId = (int) $this->request->getPost('location_id');
+
+        if ($quantity < 1 || $quantity > (int) $item['quantity']) {
+            $message = 'Jumlah konversi tidak valid. Stok tersedia: '
+                . $item['quantity'] . ' ' . $item['satuan'] . '.';
+
+            if ($isAjax) {
+                return $this->respondError($message, 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $message);
+        }
+
+        if (!can_access_location($locationId)) {
+            if ($isAjax) {
+                return $this->respondError('Anda tidak memiliki akses ke lokasi tujuan.', 403);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Anda tidak memiliki akses ke lokasi tujuan.');
+        }
+
+        $baseCode = trim((string) $this->request->getPost('asset_code'));
+        $transactionDate = (string) $this->request->getPost('transaction_date');
+        $notes = trim((string) ($this->request->getPost('notes') ?? ''));
+
+        $db = db_connect();
+        $db->transStart();
+
+        // Kurangi stok secara atomik.
+        $db->table('stock_items')
+            ->set('quantity', 'quantity - ' . $quantity, false)
+            ->where('id', $id)
+            ->where('quantity >=', $quantity)
+            ->update();
+
+        if ($db->affectedRows() === 0) {
+            $db->transRollback();
+
+            $available = (int) $this->itemModel->find($id)['quantity'];
+            $message = 'Stok tidak mencukupi. Stok tersedia: '
+                . $available . ' ' . $item['satuan'] . '.';
+
+            if ($isAjax) {
+                return $this->respondError($message, 409);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $message);
+        }
+
+        // Catat histori keluar barang stok.
+        $this->transactionModel->insert([
+            'transaction_code' => $this->transactionModel->generateCode(),
+            'transaction_date' => $transactionDate,
+            'transaction_type' => 'Keluar',
+            'item_type'        => 'Barang Stok',
+            'stock_item_id'    => $id,
+            'quantity'         => $quantity,
+            'from_location_id' => $item['location_id'],
+            'reason'           => 'Konversi ke aset',
+            'notes'            => $notes ?: null,
+            'created_by'       => session()->get('user_id'),
+        ]);
+
+        $stockTransactionId = $this->transactionModel->getInsertID();
+
+        $assetIds = [];
+        $newQuantity = (int) $item['quantity'] - $quantity;
+
+        for ($i = 1; $i <= $quantity; $i++) {
+            $assetCode = $quantity === 1
+                ? $baseCode
+                : $baseCode . '-' . $i;
+
+            $assetId = $this->assetModel->insert([
+                'asset_code'        => $assetCode,
+                'name'              => $this->request->getPost('name'),
+                'category_id'       => $this->request->getPost('category_id'),
+                'unit_id'           => $this->request->getPost('unit_id'),
+                'location_id'       => $locationId,
+                'brand'             => $this->request->getPost('brand'),
+                'model'             => $this->request->getPost('model'),
+                'serial_number'     => $this->request->getPost('serial_number'),
+                'acquisition_year'  => $this->request->getPost('acquisition_year') ?: null,
+                'acquisition_price' => $this->request->getPost('acquisition_price') ?: 0,
+                'condition_status'  => $this->request->getPost('condition_status'),
+                'asset_status'      => $this->request->getPost('asset_status'),
+                'description'       => $this->request->getPost('description'),
+            ]);
+
+            if (!$assetId) {
+                $db->transRollback();
+
+                $message = 'Gagal membuat aset. Kode barang mungkin sudah digunakan.';
+
+                if ($isAjax) {
+                    return $this->respondError($message, 409);
+                }
+
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', $message);
+            }
+
+            $assetIds[] = (int) $assetId;
+
+            $this->transactionModel->insert([
+                'transaction_code' => $this->transactionModel->generateCode(),
+                'transaction_date' => $transactionDate,
+                'transaction_type' => 'Perolehan',
+                'item_type'        => 'Aset',
+                'asset_id'         => $assetId,
+                'quantity'         => 1,
+                'to_location_id'   => $locationId,
+                'reference_type'   => 'stock_transaction',
+                'reference_id'     => $stockTransactionId,
+                'reason'           => 'Konversi dari barang stok',
+                'notes'            => $notes ?: null,
+                'created_by'       => session()->get('user_id'),
+            ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            if ($isAjax) {
+                return $this->respondError('Konversi stok ke aset gagal disimpan.', 500);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Konversi stok ke aset gagal disimpan.');
+        }
+
+        if ($isAjax) {
+            return $this->respondSuccess('Konversi stok ke aset berhasil dicatat.', [
+                'quantity'       => $quantity,
+                'asset_ids'      => $assetIds,
+                'asset_id'       => $assetIds[0] ?? null,
+                'stock_quantity' => $newQuantity,
+                'transaction'    => $this->transactionRow($stockTransactionId),
+            ]);
+        }
+
+        return redirect()
+            ->to('/assets')
+            ->with('success', 'Konversi ' . $quantity . ' unit stok ke aset berhasil dicatat.');
     }
 
     /**
