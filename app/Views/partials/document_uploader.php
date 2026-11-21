@@ -92,6 +92,42 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
                         </small>
                     </div>
 
+                    <div class="mb-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                id="<?= esc($documentFormId) ?>KameraBtn">
+                            <i class="bi bi-camera"></i> Ambil dari Kamera
+                        </button>
+                        <small class="text-muted ms-2">
+                            Ambil foto langsung dari kamera (hasilnya JPEG).
+                        </small>
+                    </div>
+
+                    <div id="<?= esc($documentFormId) ?>KameraWrap" class="mb-3 d-none">
+                        <video id="<?= esc($documentFormId) ?>KameraVideo"
+                               autoplay
+                               playsinline
+                               muted
+                               class="w-100 rounded border bg-dark"
+                               style="max-height: 220px; object-fit: cover;"></video>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="button" class="btn btn-primary btn-sm" id="<?= esc($documentFormId) ?>KameraCapture">
+                                <i class="bi bi-camera-fill"></i> Ambil Foto
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="<?= esc($documentFormId) ?>KameraClose">
+                                Tutup
+                            </button>
+                        </div>
+                        <canvas id="<?= esc($documentFormId) ?>KameraCanvas" class="d-none"></canvas>
+                    </div>
+
+                    <!-- Fallback untuk perangkat/browser yang tidak mendukung getUserMedia -->
+                    <input type="file"
+                           id="<?= esc($documentFormId) ?>KameraInput"
+                           accept="image/*"
+                           capture="environment"
+                           class="d-none">
+
                     <div id="<?= esc($documentFormId) ?>Preview" class="mb-2"></div>
                     <div id="<?= esc($documentFormId) ?>Error" class="alert alert-danger d-none" role="alert"></div>
 
@@ -121,10 +157,137 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
     var MAX_BYTES = <?= (int) $documentConfig->maxSizeBytes ?>;
     var DELETE_BASE = <?= json_encode($documentBase) ?>;
 
+    var cameraBtn     = document.getElementById(FORM + 'KameraBtn');
+    var cameraWrap    = document.getElementById(FORM + 'KameraWrap');
+    var cameraVideo   = document.getElementById(FORM + 'KameraVideo');
+    var cameraCanvas  = document.getElementById(FORM + 'KameraCanvas');
+    var cameraCapture = document.getElementById(FORM + 'KameraCapture');
+    var cameraClose   = document.getElementById(FORM + 'KameraClose');
+    var cameraFallback = document.getElementById(FORM + 'KameraInput');
+
+    var cameraStream = null;
+    var pendingDocFile = null;
+
     function fail(message) {
         errBox.textContent = message;
         errBox.classList.remove('d-none');
         prev.innerHTML = '';
+    }
+
+    function stopDocCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(function (t) { t.stop(); });
+            cameraStream = null;
+        }
+        if (cameraVideo) {
+            cameraVideo.srcObject = null;
+        }
+        if (cameraWrap) {
+            cameraWrap.classList.add('d-none');
+        }
+    }
+
+    function openDocCamera() {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            if (cameraFallback) { cameraFallback.click(); }
+            else { fail('Kamera tidak didukung di perangkat ini.'); }
+            return;
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false
+        }).then(function (stream) {
+            cameraStream = stream;
+            if (cameraVideo) {
+                cameraVideo.srcObject = stream;
+            }
+            if (cameraWrap) {
+                cameraWrap.classList.remove('d-none');
+            }
+        }).catch(function (err) {
+            if (cameraFallback) {
+                cameraFallback.click();
+            } else {
+                fail('Tidak dapat mengakses kamera: ' + (err && err.message ? err.message : 'izin ditolak.'));
+            }
+        });
+    }
+
+    function captureDocPhoto() {
+        if (!cameraVideo || !cameraCanvas) { return; }
+
+        var w = cameraVideo.videoWidth || 640;
+        var h = cameraVideo.videoHeight || 480;
+
+        cameraCanvas.width = w;
+        cameraCanvas.height = h;
+
+        var ctx = cameraCanvas.getContext('2d');
+        ctx.drawImage(cameraVideo, 0, 0, w, h);
+
+        if (typeof cameraCanvas.toBlob !== 'function') {
+            fail('Browser tidak mendukung pengambilan foto.');
+            return;
+        }
+
+        cameraCanvas.toBlob(function (blob) {
+            if (!blob) {
+                fail('Gagal mengambil foto dari kamera.');
+                return;
+            }
+
+            var file = new File([blob], 'kamera-' + Date.now() + '.jpg', {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+
+            pendingDocFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (e) {
+                // pendingDocFile tetap dipakai saat submit.
+            }
+
+            stopDocCamera();
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }, 'image/jpeg', 0.9);
+    }
+
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', openDocCamera);
+    }
+
+    if (cameraCapture) {
+        cameraCapture.addEventListener('click', captureDocPhoto);
+    }
+
+    if (cameraClose) {
+        cameraClose.addEventListener('click', stopDocCamera);
+    }
+
+    if (cameraFallback) {
+        cameraFallback.addEventListener('change', function () {
+            var file = this.files && this.files[0];
+            if (!file) { return; }
+            pendingDocFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (e) {
+                // pendingDocFile tetap dipakai.
+            }
+            this.value = '';
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    var docModalEl = document.getElementById('uploadDokumenModal');
+    if (docModalEl) {
+        docModalEl.addEventListener('hidden.bs.modal', stopDocCamera);
     }
 
     // Peringatan lebih dulu di browser supaya tidak perlu bolak-balik ke
@@ -133,17 +296,22 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
         errBox.classList.add('d-none');
         prev.innerHTML = '';
 
-        var file = this.files && this.files[0];
+        if (this.files && this.files.length) {
+            pendingDocFile = null;
+        }
+        var file = (this.files && this.files[0]) || pendingDocFile;
         if (!file) { return; }
 
         if (! /\.(pdf|jpe?g|png)$/i.test(file.name)) {
             this.value = '';
+            pendingDocFile = null;
             fail('Tipe berkas tidak diizinkan. Gunakan PDF, JPG, atau PNG.');
             return;
         }
 
         if (file.size > MAX_BYTES) {
             this.value = '';
+            pendingDocFile = null;
             fail('Ukuran berkas ' + Math.round(file.size / 1048576)
                  + ' MB melebihi batas ' + Math.round(MAX_BYTES / 1048576) + ' MB.');
             return;
@@ -157,7 +325,9 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        if (!input.files || !input.files[0]) {
+        var file = (input.files && input.files[0]) || pendingDocFile;
+
+        if (!file) {
             fail('Pilih berkas terlebih dahulu.');
             return;
         }
@@ -170,9 +340,14 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
         submit.disabled = true;
         errBox.classList.add('d-none');
 
+        var data = new FormData(form);
+        if ((!input.files || !input.files[0]) && pendingDocFile) {
+            data.set('document', pendingDocFile, pendingDocFile.name);
+        }
+
         fetch(form.action, {
             method: 'POST',
-            body: new FormData(form),
+            body: data,
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin'
         })
@@ -188,6 +363,7 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
                 submit.disabled = false;
 
                 if (json && json.success) {
+                    pendingDocFile = null;
                     Inventaris.toast(json.message);
                     Inventaris.hideModal('uploadDokumenModal');
                     form.reset();
