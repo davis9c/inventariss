@@ -423,7 +423,7 @@
      id="mutasiModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="mutasiForm"
                   method="post"
@@ -486,7 +486,7 @@
      id="assetOutModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetOutForm"
                   method="post"
@@ -529,7 +529,7 @@
      id="assetReturnModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="assetReturnForm"
                   method="post"

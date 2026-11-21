@@ -35,6 +35,7 @@
                             <th>Nama</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -46,7 +47,7 @@
 </div>
 
 <div class="modal fade" id="createCategoryModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="createCategoryForm" method="post" action="<?= base_url('categories/store') ?>">
                 <?= csrf_field() ?>
@@ -78,7 +79,7 @@
 </div>
 
 <div class="modal fade" id="editCategoryModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="editCategoryForm" method="post" action="">
                 <?= csrf_field() ?>
@@ -129,6 +130,7 @@
             { data: 'is_active', render: function (d) {
                 return Number(d) === 1 ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>';
             }},
+            { data: 'created_at', render: function (d) { return Inventaris.esc(d || '-'); } },
             { data: null, orderable: false, searchable: false, render: function (d, type, row) {
                 return '<button type="button" class="btn btn-sm btn-warning btn-edit" data-id="' + row.id + '">Edit</button> ' +
                     '<button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '">Hapus</button>';

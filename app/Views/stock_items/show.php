@@ -219,7 +219,7 @@
 
 <!-- MODAL EDIT -->
 <div class="modal fade" id="editStockModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="editStockForm" method="post" action="<?= base_url('stock-items/update/' . $item['id']) ?>">
                 <div class="modal-header">
@@ -283,7 +283,7 @@
 
 <!-- MODAL STOK MASUK -->
 <div class="modal fade" id="stockInModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="stockInForm" method="post" action="<?= base_url('stock-items/stock-in/' . $item['id']) ?>">
                 <div class="modal-header">
@@ -315,7 +315,7 @@
 
 <!-- MODAL STOK KELUAR -->
 <div class="modal fade" id="stockOutModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="stockOutForm" method="post" action="<?= base_url('stock-items/stock-out/' . $item['id']) ?>">
                 <div class="modal-header">
@@ -350,7 +350,7 @@
 
 <!-- MODAL PINDAH LOKASI -->
 <div class="modal fade" id="transferModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="transferForm" method="post" action="<?= base_url('stock-items/transfer/' . $item['id']) ?>">
                 <div class="modal-header">
@@ -394,7 +394,7 @@
 
 <!-- MODAL PENYESUAIAN -->
 <div class="modal fade" id="adjustmentModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="adjustmentForm" method="post" action="<?= base_url('stock-items/adjustment/' . $item['id']) ?>">
                 <div class="modal-header">

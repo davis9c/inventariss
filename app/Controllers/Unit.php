@@ -30,7 +30,7 @@ class Unit extends BaseController
                 'units',
                 static fn ($b) => $b->select('units.*'),
                 ['code', 'name', 'description'],
-                [0 => 'code', 1 => 'name', 2 => 'description', 3 => 'is_active'],
+                [0 => 'code', 1 => 'name', 2 => 'description', 3 => 'is_active', 4 => 'created_at'],
                 'name'
             ));
         }

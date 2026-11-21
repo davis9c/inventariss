@@ -101,6 +101,7 @@
                                 <th>#</th>
                                 <th>Kode</th>
                                 <th>Unit / Departemen</th>
+                                <th>Tanggal</th>
                             </tr>
                         </thead>
 
@@ -119,6 +120,10 @@
 
                                     <td>
                                         <?= esc($unit['name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= esc($unit['created_at'] ?? '-') ?>
                                     </td>
                                 </tr>
 
@@ -160,6 +165,7 @@
                                 <th>Nama Barang</th>
                                 <th>Unit</th>
                                 <th>Status</th>
+                                <th>Tanggal</th>
                             </tr>
                         </thead>
 
@@ -194,7 +200,8 @@
             {
                 data: 'asset_status',
                 defaultContent: '-'
-            }
+            },
+            { data: 'created_at', defaultContent: '-' }
         ],
         language: {
             processing: 'Memuat...',

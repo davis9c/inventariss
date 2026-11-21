@@ -49,6 +49,7 @@
                             <th>Stok</th>
                             <th>Lokasi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th class="text-nowrap">Aksi</th>
                         </tr>
                     </thead>
@@ -64,7 +65,7 @@
 
 <!-- MODAL TAMBAH -->
 <div class="modal fade" id="createStockModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="createStockForm" method="post" action="<?= base_url('stock-items/store') ?>">
                 <div class="modal-header">
@@ -124,7 +125,7 @@
 
 <!-- MODAL EDIT -->
 <div class="modal fade" id="editStockModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="editStockForm" method="post" class="needs-validation" novalidate>
                 <div class="modal-header">
@@ -188,7 +189,7 @@
 
 <!-- MODAL STOK MASUK -->
 <div class="modal fade" id="stockInModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="stockInForm" method="post" class="needs-validation" novalidate>
                 <div class="modal-header">
@@ -221,7 +222,7 @@
 
 <!-- MODAL STOK KELUAR -->
 <div class="modal fade" id="stockOutModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="stockOutForm" method="post" class="needs-validation" novalidate>
                 <div class="modal-header">
@@ -305,6 +306,7 @@
             { data: 'quantity', render: function (data) { return quantityBadge(data); } },
             { data: 'location_name' },
             { data: 'is_active', render: function (data) { return statusBadge(data); } },
+            { data: 'created_at', render: function (d) { return Inventaris.esc(d || '-'); } },
             { data: null, orderable: false, searchable: false, render: function (data, type, row) { return actionHtml(row); } }
         ]
     });

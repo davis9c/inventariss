@@ -216,6 +216,7 @@
                             <th>Lokasi</th>
                             <th>Kondisi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                         </tr>
 
                     </thead>
@@ -297,7 +298,8 @@
                     }
                     return '<span class="badge bg-secondary">' + Inventaris.esc(data) + '</span>';
                 }
-            }
+            },
+            { data: 'created_at', defaultContent: '-' }
         ],
         language: {
             processing: 'Memuat...',

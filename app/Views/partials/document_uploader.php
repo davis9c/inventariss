@@ -32,7 +32,7 @@ $documentOwnerId = (int) ($documentOwnerId ?? 0);
      id="uploadDokumenModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="<?= esc($documentFormId) ?>"
                   method="post"

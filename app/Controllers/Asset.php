@@ -102,8 +102,10 @@ class Asset extends BaseController
                     5 => 'locations.name',
                     6 => 'assets.condition_status',
                     7 => 'assets.asset_status',
+                    8 => 'assets.created_at',
                 ],
-                'assets.name'
+                'assets.created_at',
+                'DESC'
             ));
         }
 

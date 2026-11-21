@@ -43,6 +43,7 @@
                             <th>Lokasi</th>
                             <th>Kondisi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th class="text-nowrap">Aksi</th>
                         </tr>
                     </thead>
@@ -315,6 +316,7 @@
             { data: 'location_name' },
             { data: 'condition_status', render: function (data) { return conditionBadge(data); } },
             { data: 'asset_status', render: function (data) { return statusBadge(data); } },
+            { data: 'created_at', render: function (d) { return Inventaris.esc(d || '-'); } },
             { data: null, orderable: false, searchable: false, render: function (data, type, row) { return actionHtml(row); } }
         ]
     });

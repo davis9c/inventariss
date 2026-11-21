@@ -31,7 +31,7 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
      id="uploadGambarModal"
      tabindex="-1"
      data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="<?= esc($imageFormId) ?>"
                   method="post"

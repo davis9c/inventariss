@@ -46,7 +46,7 @@ class Location extends BaseController
                       ORDER BY ii.id ASC LIMIT 1) AS image_id
                 '),
                 ['name', 'building', 'floor', 'description'],
-                [1 => 'name', 2 => 'building', 3 => 'floor', 4 => 'description', 5 => 'is_active'],
+                [1 => 'name', 2 => 'building', 3 => 'floor', 4 => 'description', 5 => 'is_active', 6 => 'created_at'],
                 'name'
             ));
         }
@@ -88,7 +88,7 @@ class Location extends BaseController
 
         $units = db_connect()
             ->table('unit_locations')
-            ->select('units.id, units.name, units.code, units.is_active')
+            ->select('units.id, units.name, units.code, units.is_active, units.created_at')
             ->join('units', 'units.id = unit_locations.unit_id')
             ->where('unit_locations.location_id', $id)
             ->orderBy('units.name', 'ASC')

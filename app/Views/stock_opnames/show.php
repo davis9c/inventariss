@@ -256,7 +256,7 @@
 
 <!-- MODAL PERIKSA ASET -->
 <div class="modal fade" id="checkAssetModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="checkAssetForm" method="post" class="needs-validation" novalidate>
                 <div class="modal-header">
@@ -296,7 +296,7 @@
 
 <!-- MODAL PERIKSA STOK -->
 <div class="modal fade" id="checkStockModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form id="checkStockForm" method="post" class="needs-validation" novalidate>
                 <div class="modal-header">

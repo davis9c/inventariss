@@ -103,8 +103,10 @@ class StockItem extends BaseController
                     5 => 'stock_items.quantity',
                     6 => 'locations.name',
                     7 => 'stock_items.is_active',
+                    8 => 'stock_items.created_at',
                 ],
-                'stock_items.name'
+                'stock_items.created_at',
+                'DESC'
             ));
         }
 

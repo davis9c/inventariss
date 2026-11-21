@@ -36,6 +36,7 @@
                             <th>Nama</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -247,6 +248,7 @@ $locationChecks = function (string $prefix, array $checked = []) use ($locations
             { data: 'is_active', render: function (d) {
                 return Number(d) === 1 ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-secondary">Nonaktif</span>';
             }},
+            { data: 'created_at', render: function (d) { return Inventaris.esc(d || '-'); } },
             { data: null, orderable: false, searchable: false, render: function (d, type, row) {
                 return '<button type="button" class="btn btn-sm btn-outline-primary btn-detail" data-id="' + row.id + '">Detail</button> ' +
                     '<button type="button" class="btn btn-sm btn-warning btn-edit" data-id="' + row.id + '">Edit</button> ' +

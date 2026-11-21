@@ -23,7 +23,7 @@ class Category extends BaseController
                 'categories',
                 static fn ($b) => $b->select('categories.*'),
                 ['name', 'description'],
-                [0 => 'name', 1 => 'description', 2 => 'is_active'],
+                [0 => 'name', 1 => 'description', 2 => 'is_active', 3 => 'created_at'],
                 'name'
             ));
         }

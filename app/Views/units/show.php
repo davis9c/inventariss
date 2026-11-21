@@ -129,6 +129,7 @@
                                 <th>Gedung</th>
                                 <th>Lantai</th>
                                 <th>Ruangan</th>
+                                <th>Tanggal</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -159,6 +160,10 @@
 
                                     <td>
                                         <?= esc($location['room'] ?? '-') ?>
+                                    </td>
+
+                                    <td>
+                                        <?= esc($location['created_at'] ?? '-') ?>
                                     </td>
 
                                     <td>
@@ -228,6 +233,7 @@
                                 <th>Lokasi</th>
                                 <th>Kondisi</th>
                                 <th>Status</th>
+                                <th>Tanggal</th>
                             </tr>
                         </thead>
 
@@ -261,6 +267,10 @@
 
                                     <td>
                                         <?= esc($asset['asset_status'] ?? '-') ?>
+                                    </td>
+
+                                    <td>
+                                        <?= esc($asset['created_at'] ?? '-') ?>
                                     </td>
 
                                 </tr>

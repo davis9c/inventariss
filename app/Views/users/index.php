@@ -39,6 +39,7 @@
                             <th>Email</th>
                             <th>Role (Lokal)</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -275,6 +276,7 @@
                         : '<span class="badge bg-secondary">Nonaktif</span>';
                 }
             },
+            { data: 'created_at', orderable: false, render: function (d) { return Inventaris.esc(d || '-'); } },
             {
                 data: null,
                 orderable: false,

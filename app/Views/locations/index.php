@@ -38,6 +38,7 @@
                             <th>Lantai</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
+                            <th>Tanggal</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -208,9 +209,30 @@ $unitChecks = function (string $prefix) use ($units) {
                                     <button type="button" class="btn btn-sm btn-primary" id="detailLocationPhotoUpload">
                                         Unggah Foto
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="detailLocationPhotoCamera">
+                                        <i class="bi bi-camera"></i> Ambil dari Kamera
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger d-none" id="detailLocationPhotoDelete">
                                         Hapus Foto
                                     </button>
+                                </div>
+
+                                <div id="detailLocationCameraWrap" class="mt-2 d-none w-100">
+                                    <video id="detailLocationCameraVideo"
+                                           autoplay
+                                           playsinline
+                                           muted
+                                           class="w-100 rounded border bg-dark"
+                                           style="max-height: 220px; object-fit: cover;"></video>
+                                    <div class="d-flex gap-2 mt-2 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-primary" id="detailLocationCameraCapture">
+                                            <i class="bi bi-camera-fill"></i> Ambil Foto
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-secondary" id="detailLocationCameraClose">
+                                            Tutup
+                                        </button>
+                                    </div>
+                                    <canvas id="detailLocationCameraCanvas" class="d-none"></canvas>
                                 </div>
 
                                 <div class="form-text text-center mt-2">
@@ -221,6 +243,7 @@ $unitChecks = function (string $prefix) use ($units) {
                                       style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
                                     <?= csrf_field() ?>
                                     <input type="file" name="image" id="detailLocationPhotoInput" accept="image/jpeg,image/png">
+                                    <input type="file" id="detailLocationPhotoCameraInput" accept="image/*" capture="environment" class="d-none">
                                 </form>
                             </div>
                         </div>
@@ -359,6 +382,7 @@ $unitChecks = function (string $prefix) use ($units) {
                         : '<span class="badge bg-secondary">Tidak Aktif</span>';
                 }
             },
+            { data: 'created_at', render: function (d) { return Inventaris.esc(d || '-'); } },
             {
                 data: null,
                 orderable: false,
@@ -407,6 +431,16 @@ $unitChecks = function (string $prefix) use ($units) {
     var photoEmpty      = document.getElementById('detailLocationPhotoEmpty');
     var photoUploadBtn  = document.getElementById('detailLocationPhotoUpload');
     var photoDeleteBtn  = document.getElementById('detailLocationPhotoDelete');
+    var photoCameraBtn  = document.getElementById('detailLocationPhotoCamera');
+    var photoCameraWrap = document.getElementById('detailLocationCameraWrap');
+    var photoCameraVideo= document.getElementById('detailLocationCameraVideo');
+    var photoCameraCanvas= document.getElementById('detailLocationCameraCanvas');
+    var photoCameraCapture= document.getElementById('detailLocationCameraCapture');
+    var photoCameraClose = document.getElementById('detailLocationCameraClose');
+    var photoCameraFallback = document.getElementById('detailLocationPhotoCameraInput');
+
+    var photoCameraStream = null;
+    var pendingPhotoFile = null;
 
     function updateDetailPhoto(imageId) {
         detailImageId = imageId ? Number(imageId) : null;
@@ -462,6 +496,7 @@ $unitChecks = function (string $prefix) use ($units) {
                     Inventaris.toast((row && row.message) || 'Lokasi tidak ditemukan.', 'danger');
                     return;
                 }
+                stopLocationCamera();
                 fillDetail(row);
                 if (!detailModal) detailModal = Inventaris.openModal('detailLocationModal');
                 else detailModal.show();
@@ -477,13 +512,135 @@ $unitChecks = function (string $prefix) use ($units) {
         openEditById(detailId);
     });
 
+    function stopLocationCamera() {
+        if (photoCameraStream) {
+            photoCameraStream.getTracks().forEach(function (t) { t.stop(); });
+            photoCameraStream = null;
+        }
+        if (photoCameraVideo) {
+            photoCameraVideo.srcObject = null;
+        }
+        if (photoCameraWrap) {
+            photoCameraWrap.classList.add('d-none');
+        }
+    }
+
+    function openLocationCamera() {
+        if (!detailId) return;
+
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            if (photoCameraFallback) { photoCameraFallback.click(); }
+            else { Inventaris.toast('Kamera tidak didukung di perangkat ini.', 'danger'); }
+            return;
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false
+        }).then(function (stream) {
+            photoCameraStream = stream;
+            if (photoCameraVideo) {
+                photoCameraVideo.srcObject = stream;
+            }
+            if (photoCameraWrap) {
+                photoCameraWrap.classList.remove('d-none');
+            }
+        }).catch(function (err) {
+            if (photoCameraFallback) {
+                photoCameraFallback.click();
+            } else {
+                Inventaris.toast('Tidak dapat mengakses kamera: ' + (err && err.message ? err.message : 'izin ditolak.'), 'danger');
+            }
+        });
+    }
+
+    function captureLocationPhoto() {
+        if (!photoCameraVideo || !photoCameraCanvas || !detailId) { return; }
+
+        var w = photoCameraVideo.videoWidth || 640;
+        var h = photoCameraVideo.videoHeight || 480;
+
+        photoCameraCanvas.width = w;
+        photoCameraCanvas.height = h;
+
+        var ctx = photoCameraCanvas.getContext('2d');
+        ctx.drawImage(photoCameraVideo, 0, 0, w, h);
+
+        if (typeof photoCameraCanvas.toBlob !== 'function') {
+            Inventaris.toast('Browser tidak mendukung pengambilan foto.', 'danger');
+            return;
+        }
+
+        photoCameraCanvas.toBlob(function (blob) {
+            if (!blob) {
+                Inventaris.toast('Gagal mengambil foto dari kamera.', 'danger');
+                return;
+            }
+
+            var file = new File([blob], 'kamera-' + Date.now() + '.jpg', {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+
+            pendingPhotoFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                photoInput.files = dt.files;
+            } catch (e) {
+                // pendingPhotoFile tetap dipakai.
+            }
+
+            stopLocationCamera();
+            photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }, 'image/jpeg', 0.9);
+    }
+
+    if (photoCameraBtn) {
+        photoCameraBtn.addEventListener('click', openLocationCamera);
+    }
+
+    if (photoCameraCapture) {
+        photoCameraCapture.addEventListener('click', captureLocationPhoto);
+    }
+
+    if (photoCameraClose) {
+        photoCameraClose.addEventListener('click', stopLocationCamera);
+    }
+
+    if (photoCameraFallback) {
+        photoCameraFallback.addEventListener('change', function () {
+            var file = this.files && this.files[0];
+            if (!file || !detailId) { return; }
+            pendingPhotoFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                photoInput.files = dt.files;
+            } catch (e) {
+                // pendingPhotoFile tetap dipakai.
+            }
+            this.value = '';
+            photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    // Hentikan kamera saat modal detail ditutup.
+    var detailModalEl = document.getElementById('detailLocationModal');
+    if (detailModalEl) {
+        detailModalEl.addEventListener('hidden.bs.modal', stopLocationCamera);
+    }
+
     photoUploadBtn.addEventListener('click', function () {
         if (!detailId) return;
         photoInput.click();
     });
 
     photoInput.addEventListener('change', function () {
-        var file = this.files && this.files[0];
+        if (this.files && this.files.length) {
+            pendingPhotoFile = null;
+        }
+        var file = (this.files && this.files[0]) || pendingPhotoFile;
 
         if (!file || !detailId) {
             return;
@@ -496,6 +653,7 @@ $unitChecks = function (string $prefix) use ($units) {
         if (file.size > photoOpts.maxOriginalBytes) {
             // Kosongkan input supaya berkas raksasa tidak ikut terkirim.
             this.value = '';
+            pendingPhotoFile = null;
             Inventaris.toast(
                 'Ukuran berkas asli melebihi batas '
                 + Math.round(photoOpts.maxOriginalBytes / 1048576) + ' MB.',
@@ -538,6 +696,7 @@ $unitChecks = function (string $prefix) use ($units) {
                 if (detailId === locationId) {
                     photoUploadBtn.textContent = label;
                     photoInput.value = '';
+                    pendingPhotoFile = null;
                 }
 
                 if (!json || !json.success) {
@@ -557,6 +716,7 @@ $unitChecks = function (string $prefix) use ($units) {
                 if (detailId === locationId) {
                     photoUploadBtn.textContent = label;
                     photoInput.value = '';
+                    pendingPhotoFile = null;
                 }
 
                 var message = (err && err.json && err.json.message)
