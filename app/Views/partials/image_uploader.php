@@ -79,6 +79,43 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
                         </small>
                     </div>
 
+                    <div class="mb-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                id="gambarAmbilKameraBtn">
+                            <i class="bi bi-camera"></i> Ambil dari Kamera
+                        </button>
+                        <small class="text-muted ms-2">
+                            Gunakan kamera perangkat untuk mengambil foto langsung.
+                        </small>
+                    </div>
+
+                    <!-- Area pratinjau kamera (tersembunyi sampai kamera dibuka) -->
+                    <div id="gambarKameraWrap" class="mb-3 d-none">
+                        <video id="gambarKameraVideo"
+                               autoplay
+                               playsinline
+                               muted
+                               class="w-100 rounded border bg-dark"
+                               style="max-height: 260px; object-fit: cover;"></video>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="button" class="btn btn-primary btn-sm" id="gambarKameraCaptureBtn">
+                                <i class="bi bi-camera-fill"></i> Ambil Foto
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="gambarKameraTutupBtn">
+                                Tutup
+                            </button>
+                        </div>
+                        <canvas id="gambarKameraCanvas" class="d-none"></canvas>
+                    </div>
+
+                    <!-- Fallback untuk perangkat/browser yang tidak mendukung getUserMedia -->
+                    <input type="file"
+                           id="gambarKameraFileInput"
+                           accept="image/*"
+                           capture="environment"
+                           class="d-none">
+
                     <div id="gambarInfo" class="small text-muted mb-2"></div>
                     <div id="gambarError" class="alert alert-danger d-none" role="alert"></div>
 
@@ -104,6 +141,17 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
     var errBox  = document.getElementById('gambarError');
     var submit  = form.querySelector('[type="submit"]');
 
+    var cameraBtn      = document.getElementById('gambarAmbilKameraBtn');
+    var cameraWrap     = document.getElementById('gambarKameraWrap');
+    var cameraVideo    = document.getElementById('gambarKameraVideo');
+    var cameraCanvas   = document.getElementById('gambarKameraCanvas');
+    var cameraCapture  = document.getElementById('gambarKameraCaptureBtn');
+    var cameraClose    = document.getElementById('gambarKameraTutupBtn');
+    var cameraFallback = document.getElementById('gambarKameraFileInput');
+
+    var cameraStream = null;
+    var pendingCameraFile = null;
+
     var OPTS = {
         maxDimension: <?= (int) $imageMaxDim ?>,
         quality: <?= $imageQuality ?>,
@@ -111,23 +159,155 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
         maxOriginalBytes: <?= (int) $imageMaxOriginal ?>
     };
 
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(function (t) { t.stop(); });
+            cameraStream = null;
+        }
+        if (cameraVideo) {
+            cameraVideo.srcObject = null;
+        }
+        if (cameraWrap) {
+            cameraWrap.classList.add('d-none');
+        }
+    }
+
+    function openCamera() {
+        errBox.classList.add('d-none');
+        info.textContent = '';
+
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            // Perangkat/browser tidak mendukung kamera langsung.
+            if (cameraFallback) { cameraFallback.click(); }
+            else { fail('Kamera tidak didukung di perangkat ini.'); }
+            return;
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false
+        }).then(function (stream) {
+            cameraStream = stream;
+            if (cameraVideo) {
+                cameraVideo.srcObject = stream;
+            }
+            if (cameraWrap) {
+                cameraWrap.classList.remove('d-none');
+            }
+        }).catch(function (err) {
+            // Izin ditolak / tidak ada kamera: coba fallback.
+            if (cameraFallback) {
+                cameraFallback.click();
+            } else {
+                fail('Tidak dapat mengakses kamera: ' + (err && err.message ? err.message : 'izin ditolak.'));
+            }
+        });
+    }
+
+    function capturePhoto() {
+        if (!cameraVideo || !cameraCanvas) { return; }
+
+        var w = cameraVideo.videoWidth || 640;
+        var h = cameraVideo.videoHeight || 480;
+
+        cameraCanvas.width = w;
+        cameraCanvas.height = h;
+
+        var ctx = cameraCanvas.getContext('2d');
+        ctx.drawImage(cameraVideo, 0, 0, w, h);
+
+        if (typeof cameraCanvas.toBlob !== 'function') {
+            fail('Browser tidak mendukung pengambilan foto.');
+            return;
+        }
+
+        info.textContent = 'Memproses gambar...';
+
+        cameraCanvas.toBlob(function (blob) {
+            if (!blob) {
+                fail('Gagal mengambil foto dari kamera.');
+                info.textContent = '';
+                return;
+            }
+
+            var file = new File([blob], 'kamera-' + Date.now() + '.jpg', {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+
+            // Simpan hasil kamera; coba juga masukkan ke input file yang sama
+            // supaya alur validasi/resize/upload existing tetap berjalan.
+            pendingCameraFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (e) {
+                // Browser tidak mendukung DataTransfer: pendingCameraFile tetap
+                // dipakai saat submit.
+            }
+
+            stopCamera();
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }, 'image/jpeg', 0.9);
+    }
+
     function fail(message) {
         errBox.textContent = message;
         errBox.classList.remove('d-none');
         info.textContent = '';
     }
 
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', openCamera);
+    }
+
+    if (cameraCapture) {
+        cameraCapture.addEventListener('click', capturePhoto);
+    }
+
+    if (cameraClose) {
+        cameraClose.addEventListener('click', stopCamera);
+    }
+
+    if (cameraFallback) {
+        cameraFallback.addEventListener('change', function () {
+            var file = this.files && this.files[0];
+            if (!file) { return; }
+            pendingCameraFile = file;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (e) {
+                // pendingCameraFile tetap dipakai saat submit.
+            }
+            this.value = '';
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    // Hentikan kamera saat modal ditutup.
+    var modalEl = document.getElementById('uploadGambarModal');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', stopCamera);
+    }
+
     input.addEventListener('change', function () {
         errBox.classList.add('d-none');
         info.textContent = '';
 
-        var file = this.files && this.files[0];
+        if (this.files && this.files.length) {
+            pendingCameraFile = null;
+        }
+        var file = (this.files && this.files[0]) || pendingCameraFile || null;
         if (!file) { return; }
 
         if (file.size > OPTS.maxOriginalBytes) {
             // Segera dihapus supaya berkas raksasa tidak ikut terkirim kalau
             // pengguna menekan tombol Unggah tanpa melihat pesan ini.
             this.value = '';
+            pendingCameraFile = null;
             fail('Ukuran berkas asli ' + Math.round(file.size / 1048576)
                  + ' MB melebihi batas ' + Math.round(OPTS.maxOriginalBytes / 1048576) + ' MB.');
             return;
@@ -139,7 +319,7 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var file = input.files && input.files[0];
+        var file = (input.files && input.files[0]) || pendingCameraFile;
 
         if (!file) {
             fail('Pilih gambar terlebih dahulu.');
@@ -186,6 +366,7 @@ $imageQuality     = (float) ($imageConfig->jpegQuality ?? 0.82);
                 submit.disabled = false;
 
                 if (json && json.success) {
+                    pendingCameraFile = null;
                     Inventaris.toast(json.message);
                     // Galeri dirender server, jadi halaman dimuat ulang agar
                     // gambar barunya langsung tampil.
