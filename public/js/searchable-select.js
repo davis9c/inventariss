@@ -1,65 +1,33 @@
 (function () {
     'use strict';
 
-    function enhance(select) {
-        if (!select || select.dataset.searchable === '1') return;
-        if (select.hasAttribute('data-no-search')) return;
-        if (select.options.length <= 3) return;
-
-        select.dataset.searchable = '1';
-
-        var wrapper = document.createElement('div');
-        wrapper.className = 'searchable-select';
-
-        var input = document.createElement('input');
-        input.type = 'search';
-        input.className = 'form-control form-control-sm mb-1';
-        input.placeholder = 'Cari...';
-        input.setAttribute('aria-label', 'Cari opsi');
-
-        // prevent form submit on enter
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') e.preventDefault();
+    function initSelect2(root) {
+        root = root || document;
+        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+        var $ = jQuery;
+        $(root).find('select').each(function () {
+            var $el = $(this);
+            if ($el.data('select2')) return;
+            if ($el.is('[data-no-search]')) return;
+            if ($el.find('option').length <= 3 && !$el.data('force-search')) return;
+            $el.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: $el.find('option[value=""]').first().text() || 'Pilih...',
+                allowClear: false
+            });
         });
-
-        input.addEventListener('input', function () {
-            var q = this.value.trim().toLowerCase();
-            var opts = select.options;
-            for (var i = 0; i < opts.length; i++) {
-                var opt = opts[i];
-                if (opt.value === '') {
-                    opt.hidden = false;
-                    continue;
-                }
-                var text = opt.textContent.toLowerCase();
-                opt.hidden = q !== '' && text.indexOf(q) === -1;
-            }
-        });
-
-        // re-apply filter when options change (AJAX)
-        var mo = new MutationObserver(function () {
-            input.dispatchEvent(new Event('input'));
-        });
-        mo.observe(select, { childList: true });
-
-        select.parentNode.insertBefore(input, select);
     }
 
-    function init() {
-        var selects = document.querySelectorAll('select');
-        for (var i = 0; i < selects.length; i++) {
-            enhance(selects[i]);
-        }
-    }
+    window.initSelect2 = initSelect2;
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function () { initSelect2(document); });
     } else {
-        init();
+        initSelect2(document);
     }
 
-    // re-run when modals open (Bootstrap)
-    document.addEventListener('shown.bs.modal', function () {
-        init();
+    document.addEventListener('shown.bs.modal', function (e) {
+        initSelect2(e.target);
     });
 })();

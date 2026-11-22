@@ -146,6 +146,7 @@
                     }
                     sel.appendChild(opt);
                 });
+                if (window.initSelect2) window.initSelect2(sel.parentElement || document);
             });
     }
     sourceLoc.addEventListener('change', loadItems);

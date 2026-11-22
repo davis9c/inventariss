@@ -667,6 +667,7 @@
                     opt.textContent = u.name;
                     mutasiToUnit.appendChild(opt);
                 });
+                if (window.initSelect2) window.initSelect2(mutasiToUnit.parentElement || document);
             })
             .catch(function () {
                 Inventaris.toast('Gagal memuat daftar unit.', 'danger');
