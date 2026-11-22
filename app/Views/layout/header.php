@@ -40,14 +40,11 @@
 
     <script src="<?= base_url('vendor/datatables.min.js') ?>?v=<?= $assetVer ?>"></script>
 
-<!-- Select2 (searchable select) -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Combobox (single-input searchable select) -->
 
     <script>window.inventarisBaseUrl = '<?= base_url() ?>';</script>
     <script src="<?= base_url('js/inventaris.js') ?>?v=<?= $assetVer ?>"></script>
-<script src="<?= base_url('js/searchable-select.js') ?>?v=<?= $assetVer ?>"></script>
+<script src="<?= base_url('js/combobox.js') ?>?v=<?= $assetVer ?>"></script>
     <style>
         .modal:not(.modal-sm) .modal-body {
             max-height: calc(100vh - 12rem);

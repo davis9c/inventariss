@@ -45,11 +45,13 @@
 
                     <div class="col-md-6">
                         <label class="form-label">Barang</label>
-                        <select name="stock_item_id" id="stockSelect" class="form-select">
-                            <option value="">-- Pilih lokasi sumber dulu --</option>
+                        <select name="stock_item_id" id="stockSelect" class="form-select"
+                            data-ajax-url="<?= base_url('autocomplete/stock-items') ?>"
+                            data-location-source="#sourceLoc">
                         </select>
-                        <select name="asset_id" id="assetSelect" class="form-select d-none">
-                            <option value="">-- Pilih lokasi sumber dulu --</option>
+                        <select name="asset_id" id="assetSelect" class="form-select d-none"
+                            data-ajax-url="<?= base_url('autocomplete/assets') ?>"
+                            data-location-source="#sourceLoc">
                         </select>
                     </div>
 
@@ -123,68 +125,12 @@
     itemType.addEventListener('change', toggleType);
     toggleType();
 
-    function ajaxUrlFor(isStock) {
-        const locId = sourceLoc.value || '';
-        const base = isStock ? 'autocomplete/stock-items' : 'autocomplete/assets';
-        return baseUrl + base + '?location_id=' + encodeURIComponent(locId);
-    }
-
-    function reinitSelects() {
-        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
-        const $ = jQuery;
-        const isStock = itemType.value === 'Barang Stok';
-        const activeSel = isStock ? stockSelect : assetSelect;
-        const otherSel = isStock ? assetSelect : stockSelect;
-
-        // destroy both
-        [stockSelect, assetSelect].forEach(function (sel) {
-            if ($(sel).data('select2')) {
-                $(sel).select2('destroy');
-            }
-            sel.innerHTML = '';
-        });
-
-        $(activeSel).select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'Ketik untuk mencari...',
-            allowClear: true,
-            ajax: {
-                url: function () { return ajaxUrlFor(isStock); },
-                dataType: 'json',
-                delay: 250,
-                data: function (params) { return { q: params.term || '' }; },
-                processResults: function (data) { return { results: data }; },
-                cache: true
-            },
-            minimumInputLength: 0
-        });
-
-        // simpan quantity saat pilih (untuk stok)
-        if (isStock) {
-            $(stockSelect).on('select2:select', function (e) {
-                const data = e.params.data;
-                if (data && data.quantity) {
-                    qtyInput.max = data.quantity;
-                    qtyInput.value = 1;
-                }
-            });
-        }
-    }
-
-    sourceLoc.addEventListener('change', function () {
-        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-            const isStock = itemType.value === 'Barang Stok';
-            const activeSel = isStock ? stockSelect : assetSelect;
-            if (jQuery(activeSel).data('select2')) {
-                jQuery(activeSel).select2('destroy');
-            }
-            activeSel.innerHTML = '';
-            reinitSelects();
+    stockSelect.addEventListener('cb:select', function (e) {
+        if (e.detail && e.detail.quantity) {
+            qtyInput.max = e.detail.quantity;
+            qtyInput.value = 1;
         }
     });
-
-    reinitSelects();
 })();
 </script>
 

@@ -354,8 +354,13 @@ class AssetMutation extends BaseController
             ->first();
     }
 
-    public function unitsByLocation($locationId)
+    public function unitsByLocation($locationId = 0)
     {
+        $locationId = (int) $locationId;
+        if ($locationId <= 0) {
+            $locationId = (int) $this->request->getGet('location_id');
+        }
+
         $db = db_connect();
 
         $units = $db->table('unit_locations ul')
