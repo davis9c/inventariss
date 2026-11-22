@@ -447,10 +447,15 @@ class StockItem extends BaseController
             ->orderBy('name', 'ASC')
             ->findAll();
 
-        // Modal edit harus memuat lokasi barang saat ini; hanya modal
-        // pindah lokasi yang tidak menawarkan lokasi asal.
+        // Modal pindah lokasi boleh ke semua lokasi aktif (termasuk
+        // di luar tanggung jawab user; akan jadi permintaan/pending).
+        $allLocations = $this->locationModel
+            ->where('is_active', 1)
+            ->orderBy('name', 'ASC')
+            ->findAll();
+
         $transferLocations = array_values(array_filter(
-            $locations,
+            $allLocations,
             static fn (array $location): bool => (int) $location['id'] !== (int) $item['location_id']
         ));
 
@@ -748,13 +753,6 @@ class StockItem extends BaseController
             ->where('is_active', 1)
             ->where('id !=', $item['location_id']);
 
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
-
         return view('stock_items/transfer', [
             'title'     => 'Pindah Stok',
             'item'      => $item,
@@ -822,17 +820,31 @@ class StockItem extends BaseController
         }
 
         if (!can_access_location($toLocationId)) {
+            (new \App\Models\TransferRequestModel())->insert([
+                'request_kind'     => 'Penawaran',
+                'item_type'        => 'Barang Stok',
+                'asset_id'         => null,
+                'stock_item_id'    => $id,
+                'from_location_id' => $item['location_id'],
+                'to_location_id'   => $toLocationId,
+                'from_unit_id'     => $item['unit_id'],
+                'to_unit_id'       => null,
+                'quantity'         => $item['quantity'],
+                'reason'           => $this->request->getPost('reason'),
+                'notes'            => $this->request->getPost('notes'),
+                'status'           => 'Pending',
+                'requested_by'     => session()->get('user_id'),
+            ]);
+
+            $message = 'Perpindahan ke lokasi di luar tanggung jawab Anda dibuat sebagai permintaan; menunggu konfirmasi pengelola lokasi tujuan.';
+
             if ($isAjax) {
-                return $this->respondError('Anda tidak memiliki akses ke lokasi tujuan.', 403);
+                return $this->respondSuccess($message, ['pending' => true]);
             }
 
             return redirect()
-                ->back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'Anda tidak memiliki akses ke lokasi tujuan.'
-                );
+                ->to('/stock-items/' . $id)
+                ->with('success', $message);
         }
 
         if (!$this->validate([

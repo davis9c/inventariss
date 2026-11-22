@@ -47,10 +47,31 @@ $navGroup = function (string $label, array $items) use ($seg1): void {
 // ─── Grup: Inventaris ────────────────────────────────────────────
 $inventaris = [];
 if ($canManageAsset) {
+    // Badge jumlah permintaan mutasi pending (masuk ke lokasi user)
+    $pendingTransferCount = 0;
+    try {
+        $locIds = session()->get('location_ids') ?? [];
+        if (!is_array($locIds) || empty($locIds)) {
+            $locIds = array_column(
+                (new \App\Models\LocationModel())->where('is_active', 1)->findAll(),
+                'id'
+            );
+        }
+        $pendingTransferCount = (new \App\Models\TransferRequestModel())->countPendingIncoming(array_map('intval', $locIds));
+    } catch (\Throwable $e) {
+        $pendingTransferCount = 0;
+    }
+
+    $transferLabel = 'Permintaan Mutasi';
+    if ($pendingTransferCount > 0) {
+        $transferLabel .= ' (' . $pendingTransferCount . ')';
+    }
+
     $inventaris = [
         ['assets', 'Barang / Aset', base_url('assets')],
         ['stock-items', 'Barang Stok', base_url('stock-items')],
         ['asset-mutations', 'Mutasi Aset', base_url('asset-mutations')],
+        ['transfer-requests', $transferLabel, base_url('transfer-requests')],
         ['stock-movements', 'Stock Movement', base_url('stock-movements')],
         ['stock-opnames', 'Stock Opname', base_url('stock-opnames')],
     ];

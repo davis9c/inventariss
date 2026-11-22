@@ -123,13 +123,6 @@ class AssetMutation extends BaseController
             ->where('is_active', 1)
             ->orderBy('name', 'ASC');
 
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
-
         return view('asset_mutations/index', [
             'title'     => 'Mutasi Aset',
             'assets'    => $assetBuilder->findAll(),
@@ -174,13 +167,6 @@ class AssetMutation extends BaseController
         $locationBuilder = $this->locationModel
             ->where('is_active', 1)
             ->orderBy('name', 'ASC');
-
-        if (has_location_restriction()) {
-            $locationBuilder->whereIn(
-                'id',
-                user_location_ids()
-            );
-        }
 
         $locations = $locationBuilder->findAll();
 
@@ -233,26 +219,45 @@ class AssetMutation extends BaseController
                 );
         }
 
-        /*
+        $toLocationId = $this->request->getPost('to_location_id');
+
+    /*
     |--------------------------------------------------------------------------
-    | Cek akses lokasi tujuan
+    | Mutasi ke luar tanggung jawab -> buat permintaan (Penawaran)
     |--------------------------------------------------------------------------
     */
 
-        $toLocationId = $this->request->getPost('to_location_id');
+    if (! can_access_location($toLocationId)) {
+        $asset = $this->assetModel->find($assetId);
 
-        if (! can_access_location($toLocationId)) {
-            if ($isAjax) {
-                return $this->respondError('Anda tidak memiliki akses ke lokasi tujuan.', 403);
-            }
+        (new \App\Models\TransferRequestModel())->insert([
+            'request_kind'     => 'Penawaran',
+            'item_type'        => 'Aset',
+            'asset_id'         => $assetId,
+            'stock_item_id'    => null,
+            'from_location_id' => $asset['location_id'],
+            'to_location_id'   => $toLocationId,
+            'from_unit_id'     => $asset['unit_id'],
+            'to_unit_id'       => $this->request->getPost('to_unit_id'),
+            'quantity'         => 1,
+            'reason'           => $this->request->getPost('reason'),
+            'notes'            => $this->request->getPost('notes'),
+            'status'           => 'Pending',
+            'requested_by'     => session()->get('user_id'),
+        ]);
 
-            return redirect()->back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'Anda tidak memiliki akses ke lokasi tujuan.'
-                );
+        $message = 'Mutasi ke lokasi di luar tanggung jawab Anda dibuat sebagai permintaan; menunggu konfirmasi pengelola lokasi tujuan.';
+
+        if ($isAjax) {
+            return $this->respondSuccess($message, [
+                'pending' => true,
+            ]);
         }
+
+        return redirect()
+            ->to('/asset-mutations')
+            ->with('success', $message);
+    }
 
         /*
     |--------------------------------------------------------------------------

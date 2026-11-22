@@ -183,6 +183,28 @@ $routes->group(
     }
 );
 
+/*
+|--------------------------------------------------------------------------
+| Transfer Requests (permintaan mutasi)
+|--------------------------------------------------------------------------
+*/
+$routes->group(
+    'transfer-requests',
+    ['filter' => 'auth'],
+    static function ($routes) {
+        $routes->get('/', 'TransferRequest::index');
+        $routes->get('create', 'TransferRequest::create');
+        $routes->post('store', 'TransferRequest::storeRequest');
+        $routes->post('confirm/(:num)', 'TransferRequest::confirm/$1');
+        $routes->post('reject/(:num)', 'TransferRequest::reject/$1');
+        $routes->post('cancel/(:num)', 'TransferRequest::cancel/$1');
+        $routes->post('evidence/(:num)', 'TransferRequest::uploadEvidence/$1');
+        $routes->get('evidence/(:num)', 'TransferRequest::viewEvidence/$1');
+        $routes->get('assets-by-location/(:num)', 'TransferRequest::assetsByLocation/$1');
+        $routes->get('stock-by-location/(:num)', 'TransferRequest::stockByLocation/$1');
+    }
+);
+
 
 /*
 |--------------------------------------------------------------------------
