@@ -208,8 +208,15 @@ class StockItem extends BaseController
                 );
         }
 
+        $itemCode = make_unique_code(
+            'stock_items',
+            'item_code',
+            (string) $this->request->getPost('item_code')
+        );
+        $codeChanged = $itemCode !== (string) $this->request->getPost('item_code');
+
         $this->itemModel->insert([
-            'item_code'   => $this->request->getPost('item_code'),
+            'item_code'   => $itemCode,
             'name'        => $this->request->getPost('name'),
             'category_id' => $this->request->getPost('category_id'),
             'unit_id'     => $this->request->getPost('unit_id'),
@@ -220,15 +227,21 @@ class StockItem extends BaseController
             'is_active'   => 1,
         ]);
 
+        $successMessage = 'Barang stok berhasil ditambahkan.';
+        if ($codeChanged) {
+            $successMessage .= ' Kode barang sudah ada, otomatis diubah menjadi ' . $itemCode . '.';
+        }
+
         if ($isAjax) {
-            return $this->respondSuccess('Barang stok berhasil ditambahkan.', [
-                'id' => $this->itemModel->getInsertID(),
+            return $this->respondSuccess($successMessage, [
+                'id'        => $this->itemModel->getInsertID(),
+                'item_code' => $itemCode,
             ]);
         }
 
         return redirect()
             ->to('/stock-items')
-            ->with('success', 'Barang stok berhasil ditambahkan.');
+            ->with('success', $successMessage);
     }
 
     public function edit($id)
@@ -308,9 +321,17 @@ class StockItem extends BaseController
                 );
         }
 
+        $itemCode = make_unique_code(
+            'stock_items',
+            'item_code',
+            (string) $this->request->getPost('item_code'),
+            (int) $id
+        );
+        $codeChanged = $itemCode !== (string) $this->request->getPost('item_code');
+
         // Stok hanya berubah melalui transaksi masuk/keluar
         $this->itemModel->update($id, [
-            'item_code'   => $this->request->getPost('item_code'),
+            'item_code'   => $itemCode,
             'name'        => $this->request->getPost('name'),
             'category_id' => $this->request->getPost('category_id'),
             'unit_id'     => $this->request->getPost('unit_id'),
@@ -320,13 +341,18 @@ class StockItem extends BaseController
             'is_active'   => $this->request->getPost('is_active') ? 1 : 0,
         ]);
 
+        $successMessage = 'Barang stok berhasil diperbarui.';
+        if ($codeChanged) {
+            $successMessage .= ' Kode barang sudah ada, otomatis diubah menjadi ' . $itemCode . '.';
+        }
+
         if ($isAjax) {
-            return $this->respondSuccess('Barang stok berhasil diperbarui.');
+            return $this->respondSuccess($successMessage);
         }
 
         return redirect()
             ->to('/stock-items')
-            ->with('success', 'Barang stok berhasil diperbarui.');
+            ->with('success', $successMessage);
     }
 
     public function show($id)
@@ -1358,9 +1384,7 @@ class StockItem extends BaseController
 
     private function validationRules(?int $id = null): array
     {
-        $itemCodeRule = $id
-            ? "required|min_length[2]|max_length[50]|is_unique[stock_items.item_code,id,{$id}]"
-            : 'required|min_length[2]|max_length[50]|is_unique[stock_items.item_code]';
+        $itemCodeRule = 'required|min_length[2]|max_length[50]';
 
         return [
             'item_code'   => $itemCodeRule,

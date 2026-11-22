@@ -193,6 +193,13 @@ class Asset extends BaseController
 
         $locationId = (int) $this->request->getPost('location_id');
 
+        $assetCode = make_unique_code(
+            'assets',
+            'asset_code',
+            (string) $this->request->getPost('asset_code')
+        );
+        $codeChanged = $assetCode !== (string) $this->request->getPost('asset_code');
+
         if (!can_access_location($locationId)) {
             if ($isAjax) {
                 return $this->respondError('Anda tidak memiliki akses ke lokasi tersebut.', 403);
@@ -212,7 +219,7 @@ class Asset extends BaseController
         $db->transStart();
 
         $this->assetModel->insert([
-            'asset_code'        => $this->request->getPost('asset_code'),
+            'asset_code'        => $assetCode,
             'name'              => $this->request->getPost('name'),
             'category_id'       => $this->request->getPost('category_id'),
             'unit_id'           => $this->request->getPost('unit_id'),
@@ -252,15 +259,21 @@ class Asset extends BaseController
                 ->with('error', 'Barang gagal disimpan.');
         }
 
+        $successMessage = 'Barang berhasil ditambahkan.';
+        if ($codeChanged) {
+            $successMessage .= ' Kode barang sudah ada, otomatis diubah menjadi ' . $assetCode . '.';
+        }
+
         if ($isAjax) {
-            return $this->respondSuccess('Barang berhasil ditambahkan.', [
-                'id' => $this->assetModel->getInsertID(),
+            return $this->respondSuccess($successMessage, [
+                'id'         => $this->assetModel->getInsertID(),
+                'asset_code' => $assetCode,
             ]);
         }
 
         return redirect()
             ->to('/assets')
-            ->with('success', 'Barang berhasil ditambahkan.');
+            ->with('success', $successMessage);
     }
 
     public function edit($id)
@@ -341,8 +354,16 @@ class Asset extends BaseController
                 );
         }
 
+        $assetCode = make_unique_code(
+            'assets',
+            'asset_code',
+            (string) $this->request->getPost('asset_code'),
+            (int) $id
+        );
+        $codeChanged = $assetCode !== (string) $this->request->getPost('asset_code');
+
         $this->assetModel->update($id, [
-            'asset_code'        => $this->request->getPost('asset_code'),
+            'asset_code'        => $assetCode,
             'name'              => $this->request->getPost('name'),
             'category_id'       => $this->request->getPost('category_id'),
             'unit_id'           => $this->request->getPost('unit_id'),
@@ -357,13 +378,18 @@ class Asset extends BaseController
             'description'       => $this->request->getPost('description'),
         ]);
 
+        $successMessage = 'Barang berhasil diperbarui.';
+        if ($codeChanged) {
+            $successMessage .= ' Kode barang sudah ada, otomatis diubah menjadi ' . $assetCode . '.';
+        }
+
         if ($isAjax) {
-            return $this->respondSuccess('Barang berhasil diperbarui.');
+            return $this->respondSuccess($successMessage);
         }
 
         return redirect()
             ->to('/assets')
-            ->with('success', 'Barang berhasil diperbarui.');
+            ->with('success', $successMessage);
     }
 
     public function delete($id)
@@ -857,9 +883,7 @@ class Asset extends BaseController
 
     private function validationRules(?int $id = null): array
     {
-        $assetCodeRule = $id
-            ? "required|is_unique[assets.asset_code,id,{$id}]"
-            : 'required|is_unique[assets.asset_code]';
+        $assetCodeRule = 'required|min_length[2]|max_length[50]';
 
         return [
             'asset_code'        => $assetCodeRule,

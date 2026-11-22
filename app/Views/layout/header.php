@@ -42,6 +42,7 @@
 
     <script>window.inventarisBaseUrl = '<?= base_url() ?>';</script>
     <script src="<?= base_url('js/inventaris.js') ?>?v=<?= $assetVer ?>"></script>
+<script src="<?= base_url('js/searchable-select.js') ?>?v=<?= $assetVer ?>"></script>
     <style>
         .modal:not(.modal-sm) .modal-body {
             max-height: calc(100vh - 12rem);

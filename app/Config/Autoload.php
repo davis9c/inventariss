@@ -92,5 +92,6 @@ class Autoload extends AutoloadConfig
         'auth',
         'location',
         'asset_document',
+        'code',
     ];
 }
