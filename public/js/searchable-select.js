@@ -9,13 +9,34 @@
             var $el = $(this);
             if ($el.data('select2')) return;
             if ($el.is('[data-no-search]')) return;
-            if ($el.find('option').length <= 3 && !$el.data('force-search')) return;
-            $el.select2({
+
+            var ajaxUrl = $el.data('ajax-url');
+            var opts = {
                 theme: 'bootstrap-5',
                 width: '100%',
                 placeholder: $el.find('option[value=""]').first().text() || 'Pilih...',
                 allowClear: false
-            });
+            };
+
+            if (ajaxUrl) {
+                opts.ajax = {
+                    url: ajaxUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return { q: params.term || '' };
+                    },
+                    processResults: function (data) {
+                        return { results: data };
+                    },
+                    cache: true
+                };
+                opts.minimumInputLength = 0;
+            } else {
+                if ($el.find('option').length <= 3 && !$el.data('force-search')) return;
+            }
+
+            $el.select2(opts);
         });
     }
 

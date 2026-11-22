@@ -118,46 +118,73 @@
             stockSelect.name = 'stock_item_id_disabled';
             assetSelect.name = 'asset_id';
         }
+        reinitSelects();
     }
     itemType.addEventListener('change', toggleType);
     toggleType();
 
-    function loadItems() {
-        const locId = sourceLoc.value;
-        if (!locId) return;
-        const isStock = itemType.value === 'Barang Stok';
-        const url = isStock
-            ? baseUrl + 'transfer-requests/stock-by-location/' + locId
-            : baseUrl + 'transfer-requests/assets-by-location/' + locId;
-
-        fetch(url, { credentials: 'same-origin' })
-            .then(r => r.json())
-            .then(data => {
-                const sel = isStock ? stockSelect : assetSelect;
-                sel.innerHTML = '<option value="">-- Pilih --</option>';
-                data.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    if (isStock) {
-                        opt.textContent = item.item_code + ' - ' + item.name + ' (stok: ' + item.quantity + ' ' + item.satuan + ')';
-                        opt.dataset.qty = item.quantity;
-                    } else {
-                        opt.textContent = item.asset_code + ' - ' + item.name;
-                    }
-                    sel.appendChild(opt);
-                });
-                if (window.initSelect2) window.initSelect2(sel.parentElement || document);
-            });
+    function ajaxUrlFor(isStock) {
+        const locId = sourceLoc.value || '';
+        const base = isStock ? 'autocomplete/stock-items' : 'autocomplete/assets';
+        return baseUrl + base + '?location_id=' + encodeURIComponent(locId);
     }
-    sourceLoc.addEventListener('change', loadItems);
-    itemType.addEventListener('change', loadItems);
 
-    stockSelect.addEventListener('change', function () {
-        const opt = this.options[this.selectedIndex];
-        if (opt && opt.dataset.qty) {
-            qtyInput.max = opt.dataset.qty;
+    function reinitSelects() {
+        if (typeof jQuery === 'undefined' || !jQuery.fn.select2) return;
+        const $ = jQuery;
+        const isStock = itemType.value === 'Barang Stok';
+        const activeSel = isStock ? stockSelect : assetSelect;
+        const otherSel = isStock ? assetSelect : stockSelect;
+
+        // destroy both
+        [stockSelect, assetSelect].forEach(function (sel) {
+            if ($(sel).data('select2')) {
+                $(sel).select2('destroy');
+            }
+            sel.innerHTML = '';
+        });
+
+        $(activeSel).select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Ketik untuk mencari...',
+            allowClear: true,
+            ajax: {
+                url: function () { return ajaxUrlFor(isStock); },
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { q: params.term || '' }; },
+                processResults: function (data) { return { results: data }; },
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+
+        // simpan quantity saat pilih (untuk stok)
+        if (isStock) {
+            $(stockSelect).on('select2:select', function (e) {
+                const data = e.params.data;
+                if (data && data.quantity) {
+                    qtyInput.max = data.quantity;
+                    qtyInput.value = 1;
+                }
+            });
+        }
+    }
+
+    sourceLoc.addEventListener('change', function () {
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            const isStock = itemType.value === 'Barang Stok';
+            const activeSel = isStock ? stockSelect : assetSelect;
+            if (jQuery(activeSel).data('select2')) {
+                jQuery(activeSel).select2('destroy');
+            }
+            activeSel.innerHTML = '';
+            reinitSelects();
         }
     });
+
+    reinitSelects();
 })();
 </script>
 

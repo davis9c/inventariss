@@ -188,6 +188,23 @@ $routes->group(
 | Transfer Requests (permintaan mutasi)
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| Autocomplete (server-side search)
+|--------------------------------------------------------------------------
+*/
+$routes->group(
+    'autocomplete',
+    ['filter' => 'auth'],
+    static function ($routes) {
+        $routes->get('assets', 'Autocomplete::assets');
+        $routes->get('stock-items', 'Autocomplete::stockItems');
+        $routes->get('locations', 'Autocomplete::locations');
+        $routes->get('units', 'Autocomplete::units');
+        $routes->get('categories', 'Autocomplete::categories');
+    }
+);
+
 $routes->group(
     'transfer-requests',
     ['filter' => 'auth'],
