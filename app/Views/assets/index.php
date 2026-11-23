@@ -200,11 +200,12 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Lokasi</label>
-                            <select name="location_id" class="form-select" required>
+                            <select name="location_id" class="form-select" disabled>
                                 <?php foreach ($locations as $location): ?>
                                     <option value="<?= $location['id'] ?>"><?= esc($location['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="form-text">Lokasi diubah lewat Mutasi Aset agar tercatat di pergerakan stok.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Brand</label>

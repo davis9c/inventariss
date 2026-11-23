@@ -305,22 +305,6 @@ class StockItem extends BaseController
                 ->with('errors', $this->validator->getErrors());
         }
 
-        $locationId = (int) $this->request->getPost('location_id');
-
-        if (!can_access_location($locationId)) {
-            if ($isAjax) {
-                return $this->respondError('Anda tidak memiliki akses ke lokasi tersebut.', 403);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with(
-                    'errors',
-                    ['location_id' => 'Anda tidak memiliki akses ke lokasi tersebut.']
-                );
-        }
-
         $itemCode = make_unique_code(
             'stock_items',
             'item_code',
@@ -335,7 +319,6 @@ class StockItem extends BaseController
             'name'        => $this->request->getPost('name'),
             'category_id' => $this->request->getPost('category_id'),
             'unit_id'     => $this->request->getPost('unit_id'),
-            'location_id' => $locationId,
             'satuan'      => $this->request->getPost('satuan'),
             'description' => $this->request->getPost('description'),
             'is_active'   => $this->request->getPost('is_active') ? 1 : 0,
@@ -1391,7 +1374,9 @@ class StockItem extends BaseController
             'name'        => 'required|min_length[2]|max_length[150]',
             'category_id' => 'required|is_natural_no_zero',
             'unit_id'     => 'required|is_natural_no_zero',
-            'location_id' => 'required|is_natural_no_zero',
+            'location_id' => $id === null
+                ? 'required|is_natural_no_zero'
+                : 'permit_empty|is_natural_no_zero',
             'satuan'      => 'required|max_length[50]',
             'description' => 'permit_empty',
         ];

@@ -338,22 +338,6 @@ class Asset extends BaseController
                 ->with('errors', $this->validator->getErrors());
         }
 
-        $locationId = (int) $this->request->getPost('location_id');
-
-        if (!can_access_location($locationId)) {
-            if ($isAjax) {
-                return $this->respondError('Anda tidak memiliki akses ke lokasi tersebut.', 403);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with(
-                    'errors',
-                    ['location_id' => 'Anda tidak memiliki akses ke lokasi tersebut.']
-                );
-        }
-
         $assetCode = make_unique_code(
             'assets',
             'asset_code',
@@ -367,7 +351,6 @@ class Asset extends BaseController
             'name'              => $this->request->getPost('name'),
             'category_id'       => $this->request->getPost('category_id'),
             'unit_id'           => $this->request->getPost('unit_id'),
-            'location_id'       => $locationId,
             'brand'             => $this->request->getPost('brand'),
             'model'             => $this->request->getPost('model'),
             'serial_number'     => $this->request->getPost('serial_number'),
@@ -890,7 +873,9 @@ class Asset extends BaseController
             'name'              => 'required',
             'category_id'       => 'required|is_natural_no_zero',
             'unit_id'           => 'required|is_natural_no_zero',
-            'location_id'       => 'required|is_natural_no_zero',
+            'location_id'       => $id === null
+                ? 'required|is_natural_no_zero'
+                : 'permit_empty|is_natural_no_zero',
             'acquisition_year'  => 'permit_empty|numeric|greater_than_equal_to[1900]|less_than_equal_to[' . date('Y') . ']',
             'acquisition_price' => 'permit_empty|decimal',
             'condition_status'  => 'required|in_list[Baik,Rusak Ringan,Rusak Berat]',
