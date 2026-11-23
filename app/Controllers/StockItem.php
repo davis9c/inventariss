@@ -1261,9 +1261,13 @@ class StockItem extends BaseController
         $newQuantity = (int) $item['quantity'] - $quantity;
 
         for ($i = 1; $i <= $quantity; $i++) {
-            $assetCode = $quantity === 1
+            $candidate = $quantity === 1
                 ? $baseCode
                 : $baseCode . '-' . $i;
+
+            // Pastikan kode aset unik (suffix acak bila bentrok dengan
+            // kode yang sudah ada) agar konversi tidak gagal di tengah jalan.
+            $assetCode = make_unique_code('assets', 'asset_code', $candidate);
 
             $assetId = $this->assetModel->insert([
                 'asset_code'        => $assetCode,

@@ -59,7 +59,7 @@
                         <input type="text"
                             name="asset_code"
                             class="form-control <?= isset($errors['asset_code']) ? 'is-invalid' : '' ?>"
-                            value="<?= esc(old('asset_code')) ?>"
+                            value="<?= esc(old('asset_code', $item['item_code'])) ?>"
                             placeholder="Contoh: MON-001"
                             required>
                         <?php if (isset($errors['asset_code'])): ?>
