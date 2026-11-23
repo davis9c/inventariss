@@ -138,7 +138,13 @@ if ($isSuperAdmin || in_array('Admin Inventaris', $roles)) {
                     </a>
                 </li>
 
-                <?php $navGroup('Inventaris', $inventaris); ?>
+                <?php foreach ($inventaris as [$segment, $itemLabel, $url]): ?>
+                    <li class="nav-item">
+                        <a class="nav-link<?= $seg1 === $segment ? ' active' : '' ?>" href="<?= esc($url) ?>">
+                            <?= esc($itemLabel) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
                 <?php $navGroup('Master Data', $masterData); ?>
                 <?php $navGroup('Laporan', $laporan); ?>
                 <?php $navGroup('Bantuan', $bantuan); ?>
