@@ -87,6 +87,10 @@ class StockItem extends BaseController
                     if (has_location_restriction()) {
                         $b->whereIn('stock_items.location_id', user_location_ids());
                     }
+
+                    if (! $this->isSuperAdmin()) {
+                        $b->where('stock_items.is_active', 1);
+                    }
                 },
                 [
                     'stock_items.item_code',
@@ -138,6 +142,10 @@ class StockItem extends BaseController
                 'stock_items.location_id',
                 user_location_ids()
             );
+        }
+
+        if (! $this->isSuperAdmin()) {
+            $builder->where('stock_items.is_active', 1);
         }
 
         $items = $builder
@@ -1332,6 +1340,169 @@ class StockItem extends BaseController
         return redirect()
             ->to('/assets')
             ->with('success', 'Konversi ' . $quantity . ' unit stok ke aset berhasil dicatat.');
+    }
+
+    /**
+     * Nonaktifkan (soft delete) barang stok — khusus Super Admin.
+     *
+     * Dipakai saat barang salah input (mis. harusnya aset) tapi riwayatnya
+     * sudah ada: barang disembunyikan dari daftar biasa tanpa menghapus
+     * data historis.
+     */
+    public function softDelete($id)
+    {
+        $isAjax = $this->request->isAJAX();
+
+        if (! $this->isSuperAdmin()) {
+            if ($isAjax) {
+                return $this->respondError('Hanya Super Admin yang dapat menonaktifkan barang stok.', 403);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with('error', 'Hanya Super Admin yang dapat menonaktifkan barang stok.');
+        }
+
+        $item = $this->itemModel->find($id);
+
+        if (! $item) {
+            if ($isAjax) {
+                return $this->respondError('Barang stok tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $this->itemModel->update($id, ['is_active' => 0]);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Barang stok dinonaktifkan.', ['id' => (int) $id]);
+        }
+
+        return redirect()
+            ->to('/stock-items')
+            ->with('success', 'Barang stok dinonaktifkan.');
+    }
+
+    /**
+     * Pulihkan barang stok yang dinonaktifkan — khusus Super Admin.
+     */
+    public function restore($id)
+    {
+        $isAjax = $this->request->isAJAX();
+
+        if (! $this->isSuperAdmin()) {
+            if ($isAjax) {
+                return $this->respondError('Hanya Super Admin yang dapat memulihkan barang stok.', 403);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with('error', 'Hanya Super Admin yang dapat memulihkan barang stok.');
+        }
+
+        $item = $this->itemModel->find($id);
+
+        if (! $item) {
+            if ($isAjax) {
+                return $this->respondError('Barang stok tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $this->itemModel->update($id, ['is_active' => 1]);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Barang stok dipulihkan.', ['id' => (int) $id]);
+        }
+
+        return redirect()
+            ->to('/stock-items')
+            ->with('success', 'Barang stok dipulihkan.');
+    }
+
+    /**
+     * Hapus permanen (hard delete) barang stok — khusus Super Admin.
+     *
+     * Hanya boleh jika tidak ada riwayat transaksi/opname/transfer request dan
+     * kuantitasnya 0, supaya tidak merusak histori stok.
+     */
+    public function hardDelete($id)
+    {
+        $isAjax = $this->request->isAJAX();
+
+        if (! $this->isSuperAdmin()) {
+            if ($isAjax) {
+                return $this->respondError('Hanya Super Admin yang dapat menghapus permanen barang stok.', 403);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with('error', 'Hanya Super Admin yang dapat menghapus permanen barang stok.');
+        }
+
+        $item = $this->itemModel->find($id);
+
+        if (! $item) {
+            if ($isAjax) {
+                return $this->respondError('Barang stok tidak ditemukan.', 404);
+            }
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $db = db_connect();
+
+        $usage = (int) $db->table('inventory_transactions')
+            ->where('stock_item_id', $id)
+            ->countAllResults();
+        $usage += (int) $db->table('stock_opname_stock_details')
+            ->where('stock_item_id', $id)
+            ->countAllResults();
+        $usage += (int) $db->table('transfer_requests')
+            ->where('stock_item_id', $id)
+            ->countAllResults();
+
+        if ($usage > 0) {
+            $message = 'Barang stok tidak dapat dihapus permanen karena memiliki riwayat. Gunakan nonaktifkan.';
+
+            if ($isAjax) {
+                return $this->respondError($message, 409);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with('error', $message);
+        }
+
+        if ((int) $item['quantity'] > 0) {
+            $message = 'Barang stok masih memiliki kuantitas. Kosongkan stok terlebih dahulu.';
+
+            if ($isAjax) {
+                return $this->respondError($message, 409);
+            }
+
+            return redirect()
+                ->to('/stock-items')
+                ->with('error', $message);
+        }
+
+        $this->purgeOwnedAttachments(
+            self::KIND_IMAGE,
+            ItemImageModel::TYPE_STOCK_ITEM,
+            (int) $id
+        );
+
+        $this->itemModel->delete($id);
+
+        if ($isAjax) {
+            return $this->respondSuccess('Barang stok dihapus permanen.', ['id' => (int) $id]);
+        }
+
+        return redirect()
+            ->to('/stock-items')
+            ->with('success', 'Barang stok dihapus permanen.');
     }
 
     /**

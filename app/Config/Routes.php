@@ -239,6 +239,11 @@ $routes->group(
         $routes->post('store', 'StockItem::store');
         $routes->get('edit/(:num)', 'StockItem::edit/$1');
         $routes->post('update/(:num)', 'StockItem::update/$1');
+
+        // Hapus lunak / pulihkan / hapus permanen — khusus Super Admin.
+        $routes->post('soft-delete/(:num)', 'StockItem::softDelete/$1', ['filter' => ['auth', 'role:Super Admin']]);
+        $routes->post('restore/(:num)', 'StockItem::restore/$1', ['filter' => ['auth', 'role:Super Admin']]);
+        $routes->post('hard-delete/(:num)', 'StockItem::hardDelete/$1', ['filter' => ['auth', 'role:Super Admin']]);
         $routes->get('stock-in/(:num)', 'StockItem::stockIn/$1');
         $routes->post('stock-in/(:num)', 'StockItem::storeStockIn/$1');
         $routes->get('stock-out/(:num)', 'StockItem::stockOut/$1');

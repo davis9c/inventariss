@@ -248,6 +248,45 @@
         </div>
     </div>
 
+    <!-- ── Konversi Barang Stok ke Aset ──────────────────────── -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header">
+            <strong>Konversi Barang Stok menjadi Aset</strong>
+            <span class="badge bg-secondary float-end">stock-items</span>
+        </div>
+        <div class="card-body">
+            <p>
+                Fitur ini dipakai bila barang yang sudah tercatat sebagai
+                <strong>Barang Stok</strong> perlu menjadi <strong>Aset</strong>
+                (misalnya salah input atau barang stok dipakai sebagai aset tetap).
+                Tersedia di halaman detail Barang Stok.
+            </p>
+            <ol class="mb-3">
+                <li>Buka <strong>Barang Stok</strong> → pilih item → klik <strong>Detail</strong>.</li>
+                <li>Klik tombol <strong>Konversi ke Aset</strong> (hanya muncul jika stok tersedia).</li>
+                <li>Isi <strong>Jumlah Konversi</strong> (tidak boleh melebihi stok tersedia).</li>
+                <li>Isi data aset: <strong>Kode Barang</strong>, <strong>Nama</strong>, <strong>Kategori</strong>, <strong>Unit</strong>, <strong>Lokasi Tujuan</strong>, <strong>Kondisi</strong>, <strong>Status</strong>, serta (opsional) tahun/harga perolehan, brand, model, serial number, dan catatan.</li>
+                <li>Klik <strong>Simpan</strong>. Sistem akan:
+                    <ul>
+                        <li>mengurangi stok Barang Stok sesuai jumlah konversi;</li>
+                        <li>membuat aset baru sejumlah unit yang dikonversi;</li>
+                        <li>mencatat transaksi <em>Keluar</em> pada Barang Stok dan <em>Perolehan</em> pada Aset, yang saling terkait.</li>
+                    </ul>
+                </li>
+            </ol>
+            <p class="text-muted small mb-2">
+                Catatan: lokasi tujuan harus dapat diakses oleh user. Jika lokasi tujuan
+                berada di luar tanggung jawab Anda, konversi ditolak — pilih lokasi
+                yang sesuai atau minta pengelola lokasi tujuan.
+            </p>
+            <p class="text-muted small mb-0">
+                Jika barang stok salah input dan harus dihapus tanpa riwayat, Super Admin
+                dapat menggunakan <strong>Nonaktifkan</strong> (soft delete) atau
+                <strong>Hapus Permanen</strong> (hanya jika kuantitas 0 dan tidak ada riwayat).
+            </p>
+        </div>
+    </div>
+
     <!-- ── Catatan keamanan ──────────────────────────────────── -->
     <div class="card shadow-sm mt-4 mb-4">
         <div class="card-header">

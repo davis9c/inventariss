@@ -260,6 +260,8 @@
 (function () {
     'use strict';
 
+    var isSuperAdmin = <?= isSuperAdmin() ? 'true' : 'false' ?>;
+
     function quantityBadge(value) {
         return value > 0
             ? '<span class="badge bg-success">' + Inventaris.esc(value) + '</span>'
@@ -279,6 +281,14 @@
             '<button type="button" class="btn btn-sm btn-warning btn-edit-stock" data-id="' + row.id + '">Edit</button> ' +
             '<button type="button" class="btn btn-sm btn-success btn-stock-in" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '" data-satuan="' + Inventaris.esc(row.satuan) + '">+ Masuk</button> ' +
             '<button type="button" class="btn btn-sm btn-danger btn-stock-out" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '" data-satuan="' + Inventaris.esc(row.satuan) + '" data-qty="' + row.quantity + '">- Keluar</button>';
+        if (isSuperAdmin) {
+            if (Number(row.is_active) === 1) {
+                buttons += ' <button type="button" class="btn btn-sm btn-secondary btn-soft-delete-stock" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '">Nonaktifkan</button>';
+            } else {
+                buttons += ' <button type="button" class="btn btn-sm btn-success btn-restore-stock" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '">Aktifkan</button> ' +
+                    '<button type="button" class="btn btn-sm btn-danger btn-hard-delete-stock" data-id="' + row.id + '" data-name="' + Inventaris.esc(row.name) + '">Hapus Permanen</button>';
+            }
+        }
         return '<div class="text-nowrap">' + buttons + '</div>';
     }
 
@@ -392,6 +402,53 @@
                 ' | Stok: ' + Inventaris.esc(btn.getAttribute('data-qty')) + '</small>';
             if (!outModal) outModal = Inventaris.openModal('stockOutModal');
             else outModal.show();
+            return;
+        }
+
+        btn = e.target.closest('.btn-soft-delete-stock');
+        if (btn) {
+            if (!confirm('Nonaktifkan barang stok "' + btn.getAttribute('data-name') + '"?')) return;
+            Inventaris.fetchJson(Inventaris.baseUrl + 'stock-items/soft-delete/' + btn.getAttribute('data-id'), {}, 'POST')
+                .then(function (json) {
+                    if (json && json.success) {
+                        Inventaris.toast(json.message || 'Berhasil.');
+                        dt.ajax.reload();
+                    } else {
+                        Inventaris.toast((json && json.message) || 'Gagal.', 'danger');
+                    }
+                })
+                .catch(function () { Inventaris.toast('Koneksi gagal.', 'danger'); });
+            return;
+        }
+
+        btn = e.target.closest('.btn-restore-stock');
+        if (btn) {
+            Inventaris.fetchJson(Inventaris.baseUrl + 'stock-items/restore/' + btn.getAttribute('data-id'), {}, 'POST')
+                .then(function (json) {
+                    if (json && json.success) {
+                        Inventaris.toast(json.message || 'Berhasil.');
+                        dt.ajax.reload();
+                    } else {
+                        Inventaris.toast((json && json.message) || 'Gagal.', 'danger');
+                    }
+                })
+                .catch(function () { Inventaris.toast('Koneksi gagal.', 'danger'); });
+            return;
+        }
+
+        btn = e.target.closest('.btn-hard-delete-stock');
+        if (btn) {
+            if (!confirm('Hapus permanen barang stok "' + btn.getAttribute('data-name') + '"? Tindakan ini tidak dapat dibatalkan.')) return;
+            Inventaris.fetchJson(Inventaris.baseUrl + 'stock-items/hard-delete/' + btn.getAttribute('data-id'), {}, 'POST')
+                .then(function (json) {
+                    if (json && json.success) {
+                        Inventaris.toast(json.message || 'Berhasil.');
+                        dt.ajax.reload();
+                    } else {
+                        Inventaris.toast((json && json.message) || 'Gagal.', 'danger');
+                    }
+                })
+                .catch(function () { Inventaris.toast('Koneksi gagal.', 'danger'); });
             return;
         }
     });
