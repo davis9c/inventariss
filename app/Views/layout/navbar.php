@@ -111,6 +111,7 @@ $administrasi = [];
 if ($isSuperAdmin || in_array('Admin Inventaris', $roles)) {
     $administrasi = [
         ['users', 'User Management', base_url('users')],
+        ['access-profiles', 'Profile Akses', base_url('access-profiles')],
     ];
 }
 ?>

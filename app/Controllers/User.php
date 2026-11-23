@@ -6,7 +6,9 @@ use App\Models\UserModel;
 use App\Models\RoleModel;
 use App\Models\UserRoleModel;
 use App\Models\UserLocationModel;
+use App\Models\UserAccessProfileModel;
 use App\Models\LocationModel;
+use App\Models\AccessProfileModel;
 use App\Libraries\UserGateLibrary;
 
 class User extends BaseController
@@ -15,6 +17,7 @@ class User extends BaseController
     protected RoleModel $roleModel;
     protected UserRoleModel $userRoleModel;
     protected UserLocationModel $userLocationModel;
+    protected UserAccessProfileModel $userAccessProfileModel;
     protected LocationModel $locationModel;
 
     public function __construct()
@@ -22,7 +25,8 @@ class User extends BaseController
         $this->userModel          = new UserModel();
         $this->roleModel          = new RoleModel();
         $this->userRoleModel      = new UserRoleModel();
-        $this->userLocationModel  = new UserLocationModel();
+        $this->userLocationModel      = new UserLocationModel();
+        $this->userAccessProfileModel = new UserAccessProfileModel();
         $this->locationModel      = new LocationModel();
     }
 
@@ -113,7 +117,9 @@ class User extends BaseController
             'title' => 'User Management',
             // Dipakai oleh checkbox di modal create/edit.
             'assignableRoles' => $this->assignableRoles(),
-            'locations'       => $this->locationModel->orderBy('name', 'ASC')->findAll(),
+            'profiles'        => (new \App\Models\AccessProfileModel())
+                ->orderBy('name', 'ASC')
+                ->findAll(),
         ]);
     }
 
@@ -352,7 +358,11 @@ class User extends BaseController
                 $this->userRoleModel->where('user_id', $id)->findAll(),
                 'role_id'
             )),
-            'location_ids'     => array_map('intval', array_column(
+            'profile_ids'      => array_map('intval', array_column(
+                $this->userAccessProfileModel->where('user_id', $id)->findAll(),
+                'profile_id'
+            )),
+        'location_ids'     => array_map('intval', array_column(
                 $this->userLocationModel->where('user_id', $id)->findAll(),
                 'location_id'
             )),
@@ -431,19 +441,23 @@ class User extends BaseController
         // melakukan validasi dan proteksi Super Admin. Jangan kembalikan
         // blok role ke method ini.
 
-        // ─── Update lokasi lokal ────────────────────────────
-        $this->userLocationModel->where('user_id', $id)->delete();
+        // ─── Update profile akses lokal ─────────────────────
+        $this->userAccessProfileModel->where('user_id', $id)->delete();
 
-        $locationIds = $this->request->getPost('location_ids');
-        if (!empty($locationIds)) {
-            foreach ($locationIds as $locationId) {
-                $this->userLocationModel->insert([
-                    'user_id'     => $id,
-                    'location_id' => $locationId,
-                    'created_at'  => date('Y-m-d H:i:s'),
+        $profileIds = $this->request->getPost('profile_ids');
+        if (!empty($profileIds)) {
+            $now = date('Y-m-d H:i:s');
+            foreach ($profileIds as $profileId) {
+                $this->userAccessProfileModel->insert([
+                    'user_id'    => (int) $id,
+                    'profile_id' => (int) $profileId,
+                    'created_at' => $now,
                 ]);
             }
         }
+
+        // Sinkronkan lokasi efektif dari profile
+        sync_user_locations((int) $id);
 
         if ($isAjax) {
             return $this->respondSuccess('User berhasil diperbarui.', [
@@ -523,6 +537,7 @@ class User extends BaseController
         // Hapus relasi lokal
         $this->userRoleModel->where('user_id', $id)->delete();
         $this->userLocationModel->where('user_id', $id)->delete();
+        $this->userAccessProfileModel->where('user_id', $id)->delete();
         $this->userModel->delete($id);
 
         if ($this->request->isAJAX()) {
@@ -703,27 +718,30 @@ class User extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $this->userLocationModel->where('user_id', $id)->delete();
+        $this->userAccessProfileModel->where('user_id', $id)->delete();
 
-        $locationIds = $this->request->getPost('location_ids');
-        if (!empty($locationIds)) {
-            foreach ($locationIds as $locationId) {
-                $this->userLocationModel->insert([
-                    'user_id'     => $id,
-                    'location_id' => $locationId,
-                    'created_at'  => date('Y-m-d H:i:s'),
+        $profileIds = $this->request->getPost('profile_ids');
+        if (!empty($profileIds)) {
+            $now = date('Y-m-d H:i:s');
+            foreach ($profileIds as $profileId) {
+                $this->userAccessProfileModel->insert([
+                    'user_id'    => (int) $id,
+                    'profile_id' => (int) $profileId,
+                    'created_at' => $now,
                 ]);
             }
         }
 
+        sync_user_locations((int) $id);
+
         if ($this->request->isAJAX()) {
-            return $this->respondSuccess('Lokasi user berhasil diperbarui.', [
+            return $this->respondSuccess('Profile user berhasil diperbarui.', [
                 'id' => (int) $id,
             ]);
         }
 
         return redirect()
             ->back()
-            ->with('success', 'Lokasi user berhasil diperbarui.');
+            ->with('success', 'Profile user berhasil diperbarui.');
     }
 }

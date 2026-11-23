@@ -234,9 +234,14 @@
             </p>
             <ul>
                 <li><strong>Super Admin</strong> — semua lokasi</li>
-                <li><strong>User tanpa baris di <code>user_locations</code></strong> — semua lokasi</li>
+                <li><strong>User tanpa baris di <code>user_locations</code></strong> — <strong>tidak bisa akses lokasi apa pun</strong></li>
                 <li><strong>User dengan baris di <code>user_locations</code></strong> — hanya lokasi tersebut</li>
             </ul>
+            <p class="text-muted small mb-0">
+                Lokasi efektif user dikelola lewat <strong>Profile Akses</strong> (menu Administrasi).
+                Satu user bisa punya beberapa profile; lokasi efektif = gabungan lokasi dari semua profile yang dipilih.
+                Profile yang kosong (tanpa lokasi) berarti user tidak bisa akses lokasi apa pun.
+            </p>
             <p class="text-muted small mb-0">
                 Diisi dari menu User Management → Edit → Lokasi yang Dapat Diakses.
             </p>

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\UserLocationModel;
+use App\Models\UserAccessProfileModel;
+use App\Models\AccessProfileLocationModel;
 
 if (! function_exists('user_location_ids')) {
     function user_location_ids(): array
@@ -23,7 +25,7 @@ if (! function_exists('user_location_ids')) {
 if (! function_exists('has_location_restriction')) {
     function has_location_restriction(): bool
     {
-        // Super Admin bebas melihat semua lokasi
+        // Super Admin bebas
         $roles = session()->get('roles') ?? [];
 
         if (in_array('Super Admin', $roles, true)) {
@@ -44,11 +46,11 @@ if (! function_exists('can_access_location')) {
             return true;
         }
 
-        // User tanpa lokasi
         $locationIds = user_location_ids();
 
+        // User tanpa lokasi — tidak bisa mengakses apa pun
         if (empty($locationIds)) {
-            return true;
+            return false;
         }
 
         return in_array(
@@ -85,11 +87,11 @@ if (! function_exists('can_access_transaction')) {
             return true;
         }
 
-        // User tanpa lokasi
         $locationIds = user_location_ids();
 
+        // User tanpa lokasi — tidak bisa mengakses apa pun
         if (empty($locationIds)) {
-            return true;
+            return false;
         }
 
         $involved = array_filter([
@@ -98,12 +100,71 @@ if (! function_exists('can_access_transaction')) {
         ], static fn ($id) => $id !== null && $id !== '');
 
         if ($involved === []) {
-            // Tidak ada lokasi yang tercatat, jadi tidak ada yang bisa
-            // dibatasi. Sama seperti InventoryTransaction::data() dan
-            // show() yang aturannya diturunkan dari helper ini.
-            return true;
+            // Tidak ada lokasi yang tercatat — tetap tolak karena
+            // user sudah dibatasi ke lokasi tertentu tapi transaksi
+            // tidak melibatkan lokasi mana pun yang dimilikinya.
+            return false;
         }
 
         return (bool) array_intersect($involved, array_map('intval', $locationIds));
+    }
+}
+
+if (! function_exists('sync_user_locations')) {
+    /**
+     * Sinkronkan lokasi user berdasarkan profile yang dimilikinya.
+     *
+     * Mengambil semua profile user → gabungkan lokasi dari semua profile →
+     * timpa user_locations. Dipanggil setelah:
+     *  — user mengganti pilihan profile
+     *  — profile di-edit (lokasi bertambah/berkurang)
+     *  — profile dihapus
+     *
+     * @param int|int[] $userIds satu user_id atau array user_id
+     */
+    function sync_user_locations($userIds): void
+    {
+        $ids = is_array($userIds) ? $userIds : [(int) $userIds];
+
+        if ($ids === []) {
+            return;
+        }
+
+        $userProfileModel = new UserAccessProfileModel();
+        $profileLocModel  = new AccessProfileLocationModel();
+        $userLocModel     = new UserLocationModel();
+        $now              = date('Y-m-d H:i:s');
+
+        foreach ($ids as $userId) {
+            $profileIds = array_column(
+                $userProfileModel->where('user_id', $userId)->findAll(),
+                'profile_id'
+            );
+
+            // Hapus lokasi lama
+            $userLocModel->where('user_id', $userId)->delete();
+
+            if ($profileIds === []) {
+                continue;
+            }
+
+            // Gabung lokasi dari semua profile
+            $locationIds = [];
+            foreach ($profileIds as $profileId) {
+                foreach ($profileLocModel->where('profile_id', $profileId)->findAll() as $row) {
+                    $locationIds[] = (int) $row['location_id'];
+                }
+            }
+
+            $locationIds = array_values(array_unique($locationIds));
+
+            foreach ($locationIds as $locationId) {
+                $userLocModel->insert([
+                    'user_id'     => $userId,
+                    'location_id' => $locationId,
+                    'created_at'  => $now,
+                ]);
+            }
+        }
     }
 }

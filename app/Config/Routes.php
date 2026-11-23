@@ -344,6 +344,33 @@ $routes->group(
 
 /*
 |--------------------------------------------------------------------------
+| Access Profiles (Profile Akses)
+|--------------------------------------------------------------------------
+|
+| Hanya Admin Inventaris (dan Super Admin).
+|
+*/
+$routes->group(
+    'access-profiles',
+    [
+        'filter' => [
+            'auth',
+            'role:Admin Inventaris,Super Admin',
+        ],
+    ],
+    static function ($routes) {
+        $routes->get('/', 'AccessProfile::index');
+        $routes->get('create', 'AccessProfile::create');
+        $routes->post('store', 'AccessProfile::store');
+        $routes->get('edit/(:num)', 'AccessProfile::edit/$1');
+        $routes->post('update/(:num)', 'AccessProfile::update/$1');
+        $routes->post('delete/(:num)', 'AccessProfile::delete/$1');
+        $routes->get('data/(:num)', 'AccessProfile::data/$1');
+    }
+);
+
+/*
+|--------------------------------------------------------------------------
 | Users
 |--------------------------------------------------------------------------
 |

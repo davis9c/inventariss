@@ -130,25 +130,40 @@
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Lokasi yang Dapat Diakses</label>
+                            <label class="form-label">Profile Akses</label>
                             <div class="border rounded p-3">
-                                <?php if (empty($locations)): ?>
-                                    <div class="text-muted">Belum ada lokasi.</div>
+                                <?php if (empty($profiles)): ?>
+                                    <div class="text-muted">Belum ada profile akses.</div>
                                 <?php else: ?>
-                                    <?php foreach ($locations as $loc): ?>
+                                    <div class="mb-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 select-all-profiles">
+                                            Pilih Semua
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary unselect-all-profiles">
+                                            Kosongkan
+                                        </button>
+                                    </div>
+                                    <?php foreach ($profiles as $prof): ?>
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox"
-                                                   name="location_ids[]" value="<?= (int) $loc['id'] ?>"
-                                                   id="editUserLocation<?= (int) $loc['id'] ?>">
+                                                   name="profile_ids[]" value="<?= (int) $prof['id'] ?>"
+                                                   id="editUserProfile<?= (int) $prof['id'] ?>">
                                             <label class="form-check-label"
-                                                   for="editUserLocation<?= (int) $loc['id'] ?>">
-                                                <?= esc($loc['name']) ?>
+                                                   for="editUserProfile<?= (int) $prof['id'] ?>">
+                                                <?= esc($prof['name']) ?>
+                                                <?php if (!empty($prof['description'])): ?>
+                                                    <small class="text-muted">— <?= esc($prof['description']) ?></small>
+                                                <?php endif; ?>
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
-                        </div>
+                            <small class="text-muted">
+                                Lokasi efektif user = gabungan lokasi dari profile yang dipilih.
+                                Kosong = tidak bisa akses lokasi apa pun.
+                            </small>
+                        </div
                     </div>
                     <div class="d-flex gap-2 mt-3">
                         <button type="submit" class="btn btn-primary">Simpan Profil</button>
@@ -300,10 +315,27 @@
 
         roleForm.action = baseUrl + 'users/' + row.id + '/roles';
 
-        var locs = (row.location_ids || []).map(Number);
-        profileForm.querySelectorAll('[name="location_ids[]"]').forEach(function (cb) {
-            cb.checked = locs.indexOf(Number(cb.value)) !== -1;
+        var profs = (row.profile_ids || []).map(Number);
+        profileForm.querySelectorAll('[name="profile_ids[]"]').forEach(function (cb) {
+            cb.checked = profs.indexOf(Number(cb.value)) !== -1;
         });
+
+        var selectAllBtn = profileForm.querySelector('.select-all-profiles');
+        var unselectAllBtn = profileForm.querySelector('.unselect-all-profiles');
+        if (selectAllBtn) {
+            selectAllBtn.onclick = function () {
+                profileForm.querySelectorAll('[name="profile_ids[]"]').forEach(function (cb) {
+                    cb.checked = true;
+                });
+            };
+        }
+        if (unselectAllBtn) {
+            unselectAllBtn.onclick = function () {
+                profileForm.querySelectorAll('[name="profile_ids[]"]').forEach(function (cb) {
+                    cb.checked = false;
+                });
+            };
+        }
 
         var roles = (row.role_ids || []).map(Number);
         roleForm.querySelectorAll('[name="role_ids[]"]').forEach(function (cb) {
@@ -391,7 +423,7 @@
         openEditById(detailId);
     });
 
-    // Ambil dari users/data/:id: baris tabel tidak memuat location_ids
+    // Ambil dari users/data/:id: baris tabel tidak memuat profile_ids
     // maupun role_ids, jadi mengisi checkbox dari baris akan menghapus
     // keduanya saat disimpan.
     function openEditById(id) {
@@ -425,13 +457,28 @@
 
     profileForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        Inventaris.submitAjax(this, {
+        var checkedCount = profileForm.querySelectorAll('[name="profile_ids[]"]:checked').length;
+        if (checkedCount === 0) {
+            Inventaris.confirm({
+                title: 'Hapus Seluruh Akses Lokasi',
+                message: 'User ini tidak memiliki profile akses. Seluruh lokasi yang dapat diakses akan dihapus dan user tidak bisa melihat data inventaris apa pun. Lanjutkan?',
+                onConfirm: function () {
+                    submitProfileForm();
+                }
+            });
+            return;
+        }
+        submitProfileForm();
+    });
+
+    function submitProfileForm() {
+        Inventaris.submitAjax(profileForm, {
             onSuccess: function () {
                 Inventaris.toast('Profil user berhasil diperbarui.');
                 dt.ajax.reload();
             }
         });
-    });
+    }
 
     roleForm.addEventListener('submit', function (e) {
         e.preventDefault();
